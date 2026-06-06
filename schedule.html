@@ -48,7 +48,7 @@
        '<div class="body">'+
          '<span class="'+tagClass(ev.kind)+'">'+escapeHtml(ev.kind)+'</span>'+
          (isOff?'':'<div class="sub">'+escapeHtml(ev.time)+'　'+escapeHtml(ev.venue)+'</div>')+
-         (isOff?'':'<div class="count">参加'+ev.joinCount+'・未定'+ev.undecidedCount+'</div>')+
+         (isOff?'':'<div class="count">参加'+ev.joinCount+'・検討中'+ev.undecidedCount+'</div>')+
        '</div>';
      wrap.appendChild(div);
    });
