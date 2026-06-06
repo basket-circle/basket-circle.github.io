@@ -169,19 +169,16 @@
       const profile = await liff.getProfile();
       userId = profile.userId;
       myProfile.displayName = profile.displayName || '';
-      const pr = await callApi({ action:'getProfile', userId:userId });
-      if (pr && pr.ok && pr.data){
-        if (pr.data.displayName) myProfile.displayName = pr.data.displayName;
-        myProfile.level = pr.data.level || '';
-        myProfile.category = pr.data.category || '';
-        myProfile.transport = pr.data.transport || '';
-      }
-      await refresh();
+      const results = await Promise.all([
+        callApi({ action:'getProfile', userId:userId }).catch(function(){ return null; }),
+        callApi({ action:'getBoard',   userId:userId }).catch(function(){ return null; })
+      ]);
+      const pr = results[0], br = results[1];
+      if (pr && pr.ok && pr.data){ myProfile.level=pr.data.level||''; myProfile.category=pr.data.category||''; myProfile.transport=pr.data.transport||''; if(pr.data.displayName) myProfile.displayName=pr.data.displayName; }
+      if (br && br.ok){ boardData = br.data; render(boardData); }
       loadingEl.style.display='none';
       document.getElementById('container').style.display='block';
-    } catch(err){
-      loadingEl.textContent = '初期化エラー：' + err;
-    }
+    } catch(err){ loadingEl.textContent = '初期化エラー：' + err; }
   }
   main();
 </script>
