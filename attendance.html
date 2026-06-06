@@ -51,11 +51,25 @@
   let boardData = [];
   const loadingEl = document.getElementById('loading');
 
-  const BADGE = { '経験者':'🟢', 'ブランク勢':'🟡', '初心者':'🔵' };
-  function badge(level){ return BADGE[level] || '⚪'; }
+  const LEVEL_TAG = {
+    '経験者':   { short:'経験',     bg:'#06c755' },
+    'ブランク勢': { short:'ブランク', bg:'#f0a020' },
+    '初心者':   { short:'初心',     bg:'#3b9cff' }
+  };
+  function levelTag(level){
+    const t = LEVEL_TAG[level] || { short:'未登録', bg:'#bbbbbb' };
+    return '<span class="tagpill" style="background:'+t.bg+'">'+t.short+'</span>';
+  }
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
-  function personHtml(p){ return '<span class="person">'+badge(p.level)+escapeHtml(p.displayName)+'</span>'; }
+  function personHtml(p){ return '<span class="person">'+levelTag(p.level)+escapeHtml(p.displayName)+'</span>'; }
   function tagClass(kind){ if(kind==='練習試合') return 'tag match'; if(kind==='イベント') return 'tag event'; return 'tag'; }
+  function breakdownText(list){
+    let exp=0, blank=0, beg=0, none=0;
+    list.forEach(function(p){
+      if(p.level==='経験者')exp++; else if(p.level==='ブランク勢')blank++; else if(p.level==='初心者')beg++; else none++;
+    });
+    return '内訳：経験'+exp+'・ブランク'+blank+'・初心'+beg+(none?'・未登録'+none:'');
+  }
 
   let cbSeq = 0;
   function callApi(params){
@@ -90,8 +104,9 @@
         '<div class="ev-sub">'+escapeHtml(ev.time)+'　'+escapeHtml(ev.venue)+'</div>'+
         '<div class="line-info">参加 '+ev.joinCount+' ／ 開催ライン '+ev.line+'　'+lineMsg+'</div>'+
         '<div class="bar-wrap"><div class="bar" style="width:'+pct+'%"></div></div>'+
-        '<div class="roster"><span class="label">◯参加('+ev.joinCount+')</span> '+(ev.join.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
-        '<div class="roster"><span class="label">△未定('+ev.undecidedCount+')</span> '+(ev.undecided.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
+        '<div class="breakdown">'+breakdownText(ev.join)+'</div>'+
+        '<div class="roster"><span class="label">◯参加('+ev.joinCount+')</span><br>'+(ev.join.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
+        '<div class="roster"><span class="label">△未定('+ev.undecidedCount+')</span><br>'+(ev.undecided.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
         '<div class="btns">'+
           '<button data-st="参加" class="'+(ev.myStatus==='参加'?'on-join':'')+'">◯参加</button>'+
           '<button data-st="未定" class="'+(ev.myStatus==='未定'?'on-undecided':'')+'">△未定</button>'+
@@ -105,7 +120,6 @@
     });
   }
 
-  // タップ時：まず画面を即更新（楽観的更新）→ 裏で保存（通信1回だけ）
   function setStatus(eventId, status){
     const ev = boardData.find(function(e){ return e.eventId === eventId; });
     if (ev){
