@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>プロフィール登録</title>
+  <style>
+    body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", sans-serif; margin:0; padding:20px; background:#f7f8fa; color:#333; }
+    h1 { font-size:20px; text-align:center; }
+    .card { background:#fff; border-radius:12px; padding:20px; max-width:420px; margin:0 auto; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+    label.field { font-weight:bold; display:block; margin:16px 0 6px; }
+    input[type=text] { width:100%; box-sizing:border-box; padding:12px; font-size:16px; border:1px solid #ccc; border-radius:8px; }
+    .levels { display:flex; flex-direction:column; gap:10px; }
+    .level-opt { border:2px solid #ddd; border-radius:10px; padding:12px; display:flex; align-items:center; gap:10px; cursor:pointer; }
+    .level-opt input { transform:scale(1.3); }
+    .level-opt.selected { border-color:#06c755; background:#f0fff6; }
+    button { width:100%; margin-top:24px; padding:14px; font-size:16px; font-weight:bold; color:#fff; background:#06c755; border:none; border-radius:10px; }
+    button:disabled { background:#aaa; }
+    .hint { font-size:12px; color:#888; margin-top:4px; }
+    #msg { text-align:center; margin-top:16px; font-weight:bold; }
+    #loading { text-align:center; padding:40px; color:#888; }
+  </style>
+</head>
+<body>
+  <div id="loading">読み込み中…</div>
+  <div class="card" id="app" style="display:none;">
+    <h1>プロフィール登録</h1>
+    <label class="field">表示名</label>
+    <input type="text" id="displayName" placeholder="例：さとう" maxlength="20">
+    <div class="hint">本名でなくてOK。出席票に表示されます。</div>
+
+    <label class="field">バスケのレベル</label>
+    <div class="levels" id="levels">
+      <label class="level-opt"><input type="radio" name="level" value="経験者"> 🟢 経験者</label>
+      <label class="level-opt"><input type="radio" name="level" value="ブランク勢"> 🟡 ブランク勢（昔やってた）</label>
+      <label class="level-opt"><input type="radio" name="level" value="初心者"> 🔵 初心者</label>
+    </div>
+
+    <button id="submit">登録する</button>
+    <div id="msg"></div>
+  </div>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script>
+    const LIFF_ID = "2010311760-E5ENH95n";
+    const API = "https://script.google.com/macros/s/AKfycbziHmBXwwFiH6cTbouTHRNLhORzMO629xUBwi0jGIjX9TsJC0iPuse1KAF7r-UDPDnT/exec";
+    let userId = null;
+    const loadingEl = document.getElementById('loading');
+
+    function showApp() {
+      loadingEl.style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+    }
+
+    document.getElementById('levels').addEventListener('change', function() {
+      document.querySelectorAll('.level-opt').forEach(function(el){
+        el.classList.toggle('selected', el.querySelector('input').checked);
+      });
+    });
+
+    let cbSeq = 0;
+    function callApi(params) {
+      return new Promise(function(resolve, reject){
+        const cbName = 'jcb_' + (cbSeq++);
+        let s;
+        const to = setTimeout(function(){ cleanup(); reject('タイムアウト'); }, 15000);
+        function cleanup(){ try { delete window[cbName]; } catch(e){} if (s && s.parentNode) s.parentNode.removeChild(s); clearTimeout(to); }
+        window[cbName] = function(res){ cleanup(); resolve(res); };
+        params.callback = cbName;
+        const qs = Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+        s = document.createElement('script');
+        s.src = API + '?' + qs;
+        s.onerror = function(){ cleanup(); reject('通信エラー'); };
+        document.body.appendChild(s);
+      });
+    }
+
+    function setLevel(level){
+      const r = document.querySelector('input[name=level][value="'+level+'"]');
+      if (r) { r.checked = true; r.dispatchEvent(new Event('change', {bubbles:true})); }
+    }
+
+    async function main() {
+      try {
+        loadingEl.textContent = 'LIFF初期化中…';
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) { liff.login(); return; }
+        loadingEl.textContent = 'プロフィール取得中…';
+        const profile = await liff.getProfile();
+        userId = profile.userId;
+        document.getElementById('displayName').value = profile.displayName || '';
+        showApp();
+        callApi({ action:'getProfile', userId: userId }).then(function(res){
+          if (res && res.ok && res.data) {
+            if (res.data.displayName) document.getElementById('displayName').value = res.data.displayName;
+            if (res.data.level) setLevel(res.data.level);
+          }
+        }).catch(function(){ /* 取得失敗は新規登録として続行 */ });
+      } catch (err) {
+        loadingEl.textContent = '初期化エラー：' + err;
+      }
+    }
+
+    document.getElementById('submit').addEventListener('click', function() {
+      const displayName = document.getElementById('displayName').value.trim();
+      const levelEl = document.querySelector('input[name=level]:checked');
+      if (!displayName) { alert('表示名を入力してください'); return; }
+      if (!levelEl) { alert('レベルを選んでください'); return; }
+      const btn = this; btn.disabled = true;
+      document.getElementById('msg').textContent = '保存中…';
+      callApi({ action:'saveProfile', userId: userId, displayName: displayName, level: levelEl.value })
+        .then(function(res){
+          if (res && res.ok) {
+            document.getElementById('msg').textContent = '✅ 登録しました！この画面は閉じてOKです。';
+            setTimeout(function(){ if (liff.isInClient()) liff.closeWindow(); }, 1200);
+          } else {
+            btn.disabled = false;
+            document.getElementById('msg').textContent = '⚠️ 保存に失敗：' + (res && res.error);
+          }
+        })
+        .catch(function(e){
+          btn.disabled = false;
+          document.getElementById('msg').textContent = '⚠️ 保存に失敗：' + e;
+        });
+    });
+
+    main();
+  </script>
+</body>
+</html>
