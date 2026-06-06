@@ -47,7 +47,7 @@
   const LIFF_ID = "2010311760-vcFkg3tX";
   const API = "https://script.google.com/macros/s/AKfycbziHmBXwwFiH6cTbouTHRNLhORzMO629xUBwi0jGIjX9TsJC0iPuse1KAF7r-UDPDnT/exec";
   let userId = null;
-  let myProfile = { displayName:'', level:'' };
+  let myProfile = { displayName:'', level:'', category:'', transport:'' };
   let boardData = [];
   const loadingEl = document.getElementById('loading');
 
@@ -56,12 +56,27 @@
     'ブランク勢': { short:'ブランク', bg:'#f0a020' },
     '初心者':   { short:'初心',     bg:'#3b9cff' }
   };
+  const CAT_TAG = {
+    '高校生': { short:'高校',   bg:'#ef6c9a' },
+    '大学生': { short:'大学',   bg:'#9575cd' },
+    '社会人': { short:'社会人', bg:'#4db6ac' }
+  };
+  const TRANS_TAG = {
+    '電車(京都方面)': { short:'🚃京都',   bg:'#7e8aa0' },
+    '電車(草津方面)': { short:'🚃草津',   bg:'#7e8aa0' },
+    '車':       { short:'🚗車',     bg:'#7e8aa0' },
+    '自転車':   { short:'🚲自転車', bg:'#7e8aa0' },
+    '徒歩':     { short:'🚶徒歩',   bg:'#7e8aa0' }
+  };
+  function tagFrom(map, val){ const t=map[val]; return t ? '<span class="tagpill" style="background:'+t.bg+'">'+t.short+'</span>' : ''; }
   function levelTag(level){
     const t = LEVEL_TAG[level] || { short:'未登録', bg:'#bbbbbb' };
     return '<span class="tagpill" style="background:'+t.bg+'">'+t.short+'</span>';
   }
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
-  function personHtml(p){ return '<span class="person">'+levelTag(p.level)+escapeHtml(p.displayName)+'</span>'; }
+  function personHtml(p){
+    return '<span class="person">'+levelTag(p.level)+tagFrom(CAT_TAG,p.category)+tagFrom(TRANS_TAG,p.transport)+escapeHtml(p.displayName)+'</span>';
+  }
   function tagClass(kind){ if(kind==='練習試合') return 'tag match'; if(kind==='イベント') return 'tag event'; return 'tag'; }
   function breakdownText(list){
     let exp=0, blank=0, beg=0, none=0;
@@ -125,7 +140,7 @@
     if (ev){
       ev.join = ev.join.filter(function(p){ return !p.me; });
       ev.undecided = ev.undecided.filter(function(p){ return !p.me; });
-      const me = { displayName: myProfile.displayName, level: myProfile.level, me: true };
+      const me = { displayName: myProfile.displayName, level: myProfile.level, category: myProfile.category, transport: myProfile.transport, me: true };
       if (status === '参加') ev.join.push(me);
       else if (status === '未定') ev.undecided.push(me);
       ev.joinCount = ev.join.length;
@@ -156,6 +171,8 @@
       if (pr && pr.ok && pr.data){
         if (pr.data.displayName) myProfile.displayName = pr.data.displayName;
         myProfile.level = pr.data.level || '';
+        myProfile.category = pr.data.category || '';
+        myProfile.transport = pr.data.transport || '';
       }
       await refresh();
       loadingEl.style.display='none';
