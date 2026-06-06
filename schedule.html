@@ -37,17 +37,20 @@
  let cbSeq=0;
  function callApi(params){return new Promise(function(resolve,reject){const cbName='jcb_'+(cbSeq++);let s;const to=setTimeout(function(){cleanup();reject('タイムアウト');},15000);function cleanup(){try{delete window[cbName];}catch(e){}if(s&&s.parentNode)s.parentNode.removeChild(s);clearTimeout(to);}window[cbName]=function(res){cleanup();resolve(res);};params.callback=cbName;const qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');s=document.createElement('script');s.src=API+'?'+qs;s.onerror=function(){cleanup();reject('通信エラー');};document.body.appendChild(s);});}
  function names(list){ return list.map(function(p){ return escapeHtml(p.displayName); }).join('、'); }
+ function names(list){ return list.map(function(p){ return escapeHtml(p.displayName); }).join('、'); }
  function render(board){
    const wrap=document.getElementById('list');wrap.innerHTML='';
    if(!board||board.length===0){document.getElementById('empty').style.display='block';return;}
    document.getElementById('empty').style.display='none';
    board.forEach(function(ev){
      const isOff=ev.kind==='お休み';
+     const nameLine = ev.eventName ? '<div style="font-weight:bold;color:#1a73e8;margin-top:3px;">'+escapeHtml(ev.eventName)+'</div>' : '';
      const div=document.createElement('div');div.className='item';
      div.innerHTML=
        '<div class="date">'+ev.date+'</div>'+
        '<div class="body">'+
          '<span class="'+tagClass(ev.kind)+'">'+escapeHtml(ev.kind)+'</span>'+
+         nameLine+
          (isOff?'':'<div class="sub">'+escapeHtml(ev.time)+'　'+escapeHtml(ev.venue)+'</div>')+
          (isOff?'':'<div style="font-size:13px;margin-top:6px;"><b>◯参加('+ev.joinCount+')</b>　'+(ev.join.length?names(ev.join):'—')+'</div>')+
          (isOff?'':'<div style="font-size:13px;margin-top:3px;color:#555;"><b>△検討中('+ev.undecidedCount+')</b>　'+(ev.undecided.length?names(ev.undecided):'—')+'</div>')+
