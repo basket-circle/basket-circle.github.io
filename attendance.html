@@ -44,6 +44,8 @@
   const LIFF_ID = "2010311760-vcFkg3tX";
   const API = "https://script.google.com/macros/s/AKfycbziHmBXwwFiH6cTbouTHRNLhORzMO629xUBwi0jGIjX9TsJC0iPuse1KAF7r-UDPDnT/exec";
   let userId = null;
+  let myProfile = { displayName:'', level:'' };
+  let boardData = [];
   const loadingEl = document.getElementById('loading');
 
   const BADGE = { '経験者':'🟢', 'ブランク勢':'🟡', '初心者':'🔵' };
@@ -93,27 +95,35 @@
           '<button data-st="不参加" class="'+(ev.myStatus==='不参加'?'on-absent':'')+'">×不参加</button>'+
         '</div>'+
         '<div class="mystat">あなたの回答：'+(ev.myStatus||'未回答')+'</div>';
-      const btns = div.querySelectorAll('.btns button');
-      btns.forEach(function(b){
-        b.addEventListener('click', function(){ setStatus(ev.eventId, b.getAttribute('data-st'), btns); });
+      div.querySelectorAll('.btns button').forEach(function(b){
+        b.addEventListener('click', function(){ setStatus(ev.eventId, b.getAttribute('data-st')); });
       });
       wrap.appendChild(div);
     });
   }
 
-  function setStatus(eventId, status, btns){
-    btns.forEach(function(b){ b.disabled = true; });
+  // タップ時：まず画面を即更新（楽観的更新）→ 裏で保存（通信1回だけ）
+  function setStatus(eventId, status){
+    const ev = boardData.find(function(e){ return e.eventId === eventId; });
+    if (ev){
+      ev.join = ev.join.filter(function(p){ return !p.me; });
+      ev.undecided = ev.undecided.filter(function(p){ return !p.me; });
+      const me = { displayName: myProfile.displayName, level: myProfile.level, me: true };
+      if (status === '参加') ev.join.push(me);
+      else if (status === '未定') ev.undecided.push(me);
+      ev.joinCount = ev.join.length;
+      ev.undecidedCount = ev.undecided.length;
+      ev.myStatus = status;
+      render(boardData);
+    }
     callApi({ action:'setAttendance', userId:userId, eventId:eventId, status:status })
-      .then(function(res){
-        if(res && res.ok){ return refresh(); }
-        alert('保存に失敗：' + (res && res.error)); btns.forEach(function(b){ b.disabled=false; });
-      })
-      .catch(function(e){ alert('保存に失敗：'+e); btns.forEach(function(b){ b.disabled=false; }); });
+      .then(function(res){ if(!(res && res.ok)){ alert('保存に失敗：'+(res&&res.error)); refresh(); } })
+      .catch(function(e){ alert('保存に失敗：'+e); refresh(); });
   }
 
   function refresh(){
     return callApi({ action:'getBoard', userId:userId }).then(function(res){
-      if(res && res.ok) render(res.data);
+      if(res && res.ok){ boardData = res.data; render(boardData); }
     });
   }
 
@@ -124,6 +134,12 @@
       if(!liff.isLoggedIn()){ liff.login(); return; }
       const profile = await liff.getProfile();
       userId = profile.userId;
+      myProfile.displayName = profile.displayName || '';
+      const pr = await callApi({ action:'getProfile', userId:userId });
+      if (pr && pr.ok && pr.data){
+        if (pr.data.displayName) myProfile.displayName = pr.data.displayName;
+        myProfile.level = pr.data.level || '';
+      }
       await refresh();
       loadingEl.style.display='none';
       document.getElementById('container').style.display='block';
