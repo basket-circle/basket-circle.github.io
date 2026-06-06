@@ -63,6 +63,8 @@
     let userId = null;
     const loadingEl = document.getElementById('loading');
 
+    function cacheGet(k){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
+    function cacheSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
     function showApp(){ loadingEl.style.display='none'; document.getElementById('app').style.display='block'; }
     function refreshOptStyles(){
       document.querySelectorAll('.level-opt').forEach(function(el){
@@ -100,23 +102,26 @@
         loadingEl.textContent = 'LIFF初期化中…';
         await liff.init({ liffId: LIFF_ID });
         if (!liff.isLoggedIn()) { liff.login(); return; }
-        loadingEl.textContent = 'プロフィール取得中…';
         const profile = await liff.getProfile();
         userId = profile.userId;
         document.getElementById('displayName').value = profile.displayName || '';
+        const cached = cacheGet('profile_'+userId);
+        if (cached) {
+          if (cached.displayName) document.getElementById('displayName').value = cached.displayName;
+          setRadio('level', cached.level); setRadio('category', cached.category); setRadio('transport', cached.transport);
+          refreshOptStyles();
+        }
         showApp();
         callApi({ action:'getProfile', userId: userId }).then(function(res){
           if (res && res.ok && res.data) {
-            if (res.data.displayName) document.getElementById('displayName').value = res.data.displayName;
-            setRadio('level', res.data.level);
-            setRadio('category', res.data.category);
-            setRadio('transport', res.data.transport);
+            const d = res.data;
+            if (d.displayName) document.getElementById('displayName').value = d.displayName;
+            setRadio('level', d.level); setRadio('category', d.category); setRadio('transport', d.transport);
             refreshOptStyles();
+            cacheSet('profile_'+userId, d);
           }
         }).catch(function(){});
-      } catch (err) {
-        loadingEl.textContent = '初期化エラー：' + err;
-      }
+      } catch (err) { loadingEl.textContent = '初期化エラー：' + err; }
     }
 
     document.getElementById('submit').addEventListener('click', function() {
@@ -134,6 +139,7 @@
                 level: levelEl.value, category: catEl.value, transport: transEl.value })
         .then(function(res){
           if (res && res.ok) {
+            cacheSet('profile_'+userId, { displayName:displayName, level:levelEl.value, category:catEl.value, transport:transEl.value });
             document.getElementById('msg').textContent = '✅ 登録しました！この画面は閉じてOKです。';
             setTimeout(function(){ if (liff.isInClient()) liff.closeWindow(); }, 1200);
           } else {
