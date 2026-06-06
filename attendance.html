@@ -112,10 +112,12 @@
       const pct = ev.line>0 ? Math.min(100, Math.round(ev.joinCount/ev.line*100)) : 100;
       const remain = ev.line - ev.joinCount;
       const lineMsg = (remain>0) ? ('あと'+remain+'人で開催ライン') : '<span class="line-ok">開催ライン到達！</span>';
+      const nameLine = ev.eventName ? '<div style="font-weight:bold;color:#1a73e8;margin-top:4px;">'+escapeHtml(ev.eventName)+'</div>' : '';
       const div = document.createElement('div');
       div.className = 'event';
       div.innerHTML =
         '<div class="ev-head"><span class="ev-date">'+ev.date+'</span><span class="'+tagClass(ev.kind)+'">'+escapeHtml(ev.kind)+'</span></div>'+
+        nameLine+
         '<div class="ev-sub">'+escapeHtml(ev.time)+'　'+escapeHtml(ev.venue)+'</div>'+
         '<div class="line-info">参加 '+ev.joinCount+' ／ 開催ライン '+ev.line+'　'+lineMsg+'</div>'+
         '<div class="bar-wrap"><div class="bar" style="width:'+pct+'%"></div></div>'+
