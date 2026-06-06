@@ -36,6 +36,22 @@
       <label class="level-opt"><input type="radio" name="level" value="初心者"> 🔵 初心者</label>
     </div>
 
+    <label class="field">区分</label>
+    <div class="levels" id="categories">
+      <label class="level-opt"><input type="radio" name="category" value="高校生"> 高校生</label>
+      <label class="level-opt"><input type="radio" name="category" value="大学生"> 大学生</label>
+      <label class="level-opt"><input type="radio" name="category" value="社会人"> 社会人</label>
+    </div>
+
+    <label class="field">交通手段</label>
+    <div class="levels" id="transports">
+      <label class="level-opt"><input type="radio" name="transport" value="電車(京都方面)"> 🚃 電車（京都方面）</label>
+      <label class="level-opt"><input type="radio" name="transport" value="電車(草津方面)"> 🚃 電車（草津方面）</label>
+      <label class="level-opt"><input type="radio" name="transport" value="車"> 🚗 車</label>
+      <label class="level-opt"><input type="radio" name="transport" value="自転車"> 🚲 自転車</label>
+      <label class="level-opt"><input type="radio" name="transport" value="徒歩"> 🚶 徒歩</label>
+    </div>
+
     <button id="submit">登録する</button>
     <div id="msg"></div>
   </div>
@@ -43,28 +59,32 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     const LIFF_ID = "2010311760-E5ENH95n";
-    const API = "https://script.google.com/macros/s/AKfycbziHmBXwwFiH6cTbouTHRNLhORzMO629xUBwi0jGIjX9TsJC0iPuse1KAF7r-UDPDnT/exec";
+    const API = "★GASのWebアプリURL（…/exec）を貼る★";
     let userId = null;
     const loadingEl = document.getElementById('loading');
 
-    function showApp() {
-      loadingEl.style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-    }
-
-    document.getElementById('levels').addEventListener('change', function() {
+    function showApp(){ loadingEl.style.display='none'; document.getElementById('app').style.display='block'; }
+    function refreshOptStyles(){
       document.querySelectorAll('.level-opt').forEach(function(el){
         el.classList.toggle('selected', el.querySelector('input').checked);
       });
+    }
+    ['levels','categories','transports'].forEach(function(id){
+      document.getElementById(id).addEventListener('change', refreshOptStyles);
     });
+    function setRadio(name, val){
+      if(!val) return;
+      const r = document.querySelector('input[name='+name+'][value="'+val+'"]');
+      if (r) r.checked = true;
+    }
 
     let cbSeq = 0;
-    function callApi(params) {
+    function callApi(params){
       return new Promise(function(resolve, reject){
         const cbName = 'jcb_' + (cbSeq++);
         let s;
         const to = setTimeout(function(){ cleanup(); reject('タイムアウト'); }, 15000);
-        function cleanup(){ try { delete window[cbName]; } catch(e){} if (s && s.parentNode) s.parentNode.removeChild(s); clearTimeout(to); }
+        function cleanup(){ try{ delete window[cbName]; }catch(e){} if(s&&s.parentNode) s.parentNode.removeChild(s); clearTimeout(to); }
         window[cbName] = function(res){ cleanup(); resolve(res); };
         params.callback = cbName;
         const qs = Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
@@ -73,11 +93,6 @@
         s.onerror = function(){ cleanup(); reject('通信エラー'); };
         document.body.appendChild(s);
       });
-    }
-
-    function setLevel(level){
-      const r = document.querySelector('input[name=level][value="'+level+'"]');
-      if (r) { r.checked = true; r.dispatchEvent(new Event('change', {bubbles:true})); }
     }
 
     async function main() {
@@ -93,9 +108,12 @@
         callApi({ action:'getProfile', userId: userId }).then(function(res){
           if (res && res.ok && res.data) {
             if (res.data.displayName) document.getElementById('displayName').value = res.data.displayName;
-            if (res.data.level) setLevel(res.data.level);
+            setRadio('level', res.data.level);
+            setRadio('category', res.data.category);
+            setRadio('transport', res.data.transport);
+            refreshOptStyles();
           }
-        }).catch(function(){ /* 取得失敗は新規登録として続行 */ });
+        }).catch(function(){});
       } catch (err) {
         loadingEl.textContent = '初期化エラー：' + err;
       }
@@ -104,11 +122,16 @@
     document.getElementById('submit').addEventListener('click', function() {
       const displayName = document.getElementById('displayName').value.trim();
       const levelEl = document.querySelector('input[name=level]:checked');
+      const catEl = document.querySelector('input[name=category]:checked');
+      const transEl = document.querySelector('input[name=transport]:checked');
       if (!displayName) { alert('表示名を入力してください'); return; }
       if (!levelEl) { alert('レベルを選んでください'); return; }
+      if (!catEl) { alert('区分を選んでください'); return; }
+      if (!transEl) { alert('交通手段を選んでください'); return; }
       const btn = this; btn.disabled = true;
       document.getElementById('msg').textContent = '保存中…';
-      callApi({ action:'saveProfile', userId: userId, displayName: displayName, level: levelEl.value })
+      callApi({ action:'saveProfile', userId: userId, displayName: displayName,
+                level: levelEl.value, category: catEl.value, transport: transEl.value })
         .then(function(res){
           if (res && res.ok) {
             document.getElementById('msg').textContent = '✅ 登録しました！この画面は閉じてOKです。';
@@ -118,10 +141,7 @@
             document.getElementById('msg').textContent = '⚠️ 保存に失敗：' + (res && res.error);
           }
         })
-        .catch(function(e){
-          btn.disabled = false;
-          document.getElementById('msg').textContent = '⚠️ 保存に失敗：' + e;
-        });
+        .catch(function(e){ btn.disabled = false; document.getElementById('msg').textContent = '⚠️ 保存に失敗：' + e; });
     });
 
     main();
