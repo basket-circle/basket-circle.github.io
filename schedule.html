@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>今後の予定</title>
+<style>
+ body{font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;margin:0;padding:16px;background:#f7f8fa;color:#333;}
+ h1{font-size:20px;text-align:center;}
+ #loading{text-align:center;padding:40px;color:#888;}
+ .item{background:#fff;border-radius:12px;padding:14px 16px;margin:0 auto 12px;max-width:460px;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;align-items:flex-start;gap:12px;}
+ .date{font-size:16px;font-weight:bold;min-width:66px;}
+ .body{flex:1;}
+ .tag{font-size:12px;padding:2px 8px;border-radius:10px;background:#eef;color:#446;}
+ .tag.match{background:#ffecec;color:#c33;}
+ .tag.event{background:#fff4e0;color:#b80;}
+ .tag.off{background:#eee;color:#999;}
+ .sub{color:#666;font-size:13px;margin-top:4px;}
+ .count{font-size:12px;color:#06c755;margin-top:2px;}
+ #empty{text-align:center;color:#888;padding:30px;}
+</style>
+</head>
+<body>
+ <div id="loading">読み込み中…</div>
+ <div id="container" style="display:none;">
+  <h1>📅 今後の予定</h1>
+  <div id="list"></div>
+  <div id="empty" style="display:none;">公開中の予定はまだありません。</div>
+ </div>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+ const LIFF_ID = "2010311760-9NYeuLhZ";
+ const API = "★GASのWebアプリURL（…/exec）を貼る★";
+ const loadingEl = document.getElementById('loading');
+ function escapeHtml(s){return String(s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];});}
+ function tagClass(kind){if(kind==='練習試合')return'tag match';if(kind==='イベント')return'tag event';if(kind==='お休み')return'tag off';return'tag';}
+ let cbSeq=0;
+ function callApi(params){return new Promise(function(resolve,reject){const cbName='jcb_'+(cbSeq++);let s;const to=setTimeout(function(){cleanup();reject('タイムアウト');},15000);function cleanup(){try{delete window[cbName];}catch(e){}if(s&&s.parentNode)s.parentNode.removeChild(s);clearTimeout(to);}window[cbName]=function(res){cleanup();resolve(res);};params.callback=cbName;const qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');s=document.createElement('script');s.src=API+'?'+qs;s.onerror=function(){cleanup();reject('通信エラー');};document.body.appendChild(s);});}
+ function render(board){
+   const wrap=document.getElementById('list');wrap.innerHTML='';
+   if(!board||board.length===0){document.getElementById('empty').style.display='block';return;}
+   document.getElementById('empty').style.display='none';
+   board.forEach(function(ev){
+     const isOff=ev.kind==='お休み';
+     const div=document.createElement('div');div.className='item';
+     div.innerHTML=
+       '<div class="date">'+ev.date+'</div>'+
+       '<div class="body">'+
+         '<span class="'+tagClass(ev.kind)+'">'+escapeHtml(ev.kind)+'</span>'+
+         (isOff?'':'<div class="sub">'+escapeHtml(ev.time)+'　'+escapeHtml(ev.venue)+'</div>')+
+         (isOff?'':'<div class="count">参加'+ev.joinCount+'・未定'+ev.undecidedCount+'</div>')+
+       '</div>';
+     wrap.appendChild(div);
+   });
+ }
+ async function main(){
+   try{
+     loadingEl.textContent='LIFF初期化中…';
+     await liff.init({liffId:LIFF_ID});
+     if(!liff.isLoggedIn()){liff.login();return;}
+     const profile=await liff.getProfile();
+     const res=await callApi({action:'getBoard',userId:profile.userId});
+     if(res&&res.ok)render(res.data);
+     loadingEl.style.display='none';
+     document.getElementById('container').style.display='block';
+   }catch(err){loadingEl.textContent='初期化エラー：'+err;}
+ }
+ main();
+</script>
+</body>
+</html>
