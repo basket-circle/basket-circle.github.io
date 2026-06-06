@@ -36,6 +36,7 @@
  function tagClass(kind){if(kind==='練習試合')return'tag match';if(kind==='イベント')return'tag event';if(kind==='お休み')return'tag off';return'tag';}
  let cbSeq=0;
  function callApi(params){return new Promise(function(resolve,reject){const cbName='jcb_'+(cbSeq++);let s;const to=setTimeout(function(){cleanup();reject('タイムアウト');},15000);function cleanup(){try{delete window[cbName];}catch(e){}if(s&&s.parentNode)s.parentNode.removeChild(s);clearTimeout(to);}window[cbName]=function(res){cleanup();resolve(res);};params.callback=cbName;const qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');s=document.createElement('script');s.src=API+'?'+qs;s.onerror=function(){cleanup();reject('通信エラー');};document.body.appendChild(s);});}
+ function names(list){ return list.map(function(p){ return escapeHtml(p.displayName); }).join('、'); }
  function render(board){
    const wrap=document.getElementById('list');wrap.innerHTML='';
    if(!board||board.length===0){document.getElementById('empty').style.display='block';return;}
@@ -48,7 +49,8 @@
        '<div class="body">'+
          '<span class="'+tagClass(ev.kind)+'">'+escapeHtml(ev.kind)+'</span>'+
          (isOff?'':'<div class="sub">'+escapeHtml(ev.time)+'　'+escapeHtml(ev.venue)+'</div>')+
-         (isOff?'':'<div class="count">参加'+ev.joinCount+'・検討中'+ev.undecidedCount+'</div>')+
+         (isOff?'':'<div style="font-size:13px;margin-top:6px;"><b>◯参加('+ev.joinCount+')</b>　'+(ev.join.length?names(ev.join):'—')+'</div>')+
+         (isOff?'':'<div style="font-size:13px;margin-top:3px;color:#555;"><b>△検討中('+ev.undecidedCount+')</b>　'+(ev.undecided.length?names(ev.undecided):'—')+'</div>')+
        '</div>';
      wrap.appendChild(div);
    });
