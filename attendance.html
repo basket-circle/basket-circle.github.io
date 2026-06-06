@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>出席票</title>
+<style>
+  body { font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif; margin:0; padding:16px; background:#f7f8fa; color:#333; }
+  h1 { font-size:20px; text-align:center; }
+  #loading { text-align:center; padding:40px; color:#888; }
+  .event { background:#fff; border-radius:12px; padding:16px; margin:0 auto 16px; max-width:460px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  .ev-head { display:flex; justify-content:space-between; align-items:center; }
+  .ev-date { font-size:17px; font-weight:bold; }
+  .tag { font-size:12px; padding:2px 8px; border-radius:10px; background:#eef; color:#446; }
+  .tag.match { background:#ffecec; color:#c33; }
+  .tag.event { background:#fff4e0; color:#b80; }
+  .ev-sub { color:#666; font-size:13px; margin:4px 0 10px; }
+  .bar-wrap { background:#eee; border-radius:8px; height:14px; overflow:hidden; margin:6px 0; }
+  .bar { background:#06c755; height:100%; width:0; }
+  .line-info { font-size:13px; font-weight:bold; }
+  .line-ok { color:#06c755; }
+  .roster { margin:8px 0; font-size:14px; }
+  .roster .label { font-weight:bold; color:#555; }
+  .person { display:inline-block; margin:2px 6px 2px 0; }
+  .btns { display:flex; gap:8px; margin-top:12px; }
+  .btns button { flex:1; padding:10px; font-size:14px; font-weight:bold; border:2px solid #ccc; border-radius:8px; background:#fff; color:#555; }
+  .btns button.on-join { border-color:#06c755; background:#06c755; color:#fff; }
+  .btns button.on-undecided { border-color:#f0a020; background:#f0a020; color:#fff; }
+  .btns button.on-absent { border-color:#999; background:#999; color:#fff; }
+  .mystat { font-size:12px; color:#888; margin-top:6px; text-align:right; }
+  #empty { text-align:center; color:#888; padding:30px; }
+</style>
+</head>
+<body>
+  <div id="loading">読み込み中…</div>
+  <div id="container" style="display:none;">
+    <h1>📋 出席票</h1>
+    <div id="events"></div>
+    <div id="empty" style="display:none;">公開中の活動はまだありません。</div>
+  </div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  const LIFF_ID = "2010311760-vcFkg3tX";
+  const API = "AKfycbziHmBXwwFiH6cTbouTHRNLhORzMO629xUBwi0jGIjX9TsJC0iPuse1KAF7r-UDPDnT";
+  let userId = null;
+  const loadingEl = document.getElementById('loading');
+
+  const BADGE = { '経験者':'🟢', 'ブランク勢':'🟡', '初心者':'🔵' };
+  function badge(level){ return BADGE[level] || '⚪'; }
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+  function personHtml(p){ return '<span class="person">'+badge(p.level)+escapeHtml(p.displayName)+'</span>'; }
+  function tagClass(kind){ if(kind==='練習試合') return 'tag match'; if(kind==='イベント') return 'tag event'; return 'tag'; }
+
+  let cbSeq = 0;
+  function callApi(params){
+    return new Promise(function(resolve, reject){
+      const cbName = 'jcb_' + (cbSeq++);
+      let s;
+      const to = setTimeout(function(){ cleanup(); reject('タイムアウト'); }, 15000);
+      function cleanup(){ try{ delete window[cbName]; }catch(e){} if(s&&s.parentNode) s.parentNode.removeChild(s); clearTimeout(to); }
+      window[cbName] = function(res){ cleanup(); resolve(res); };
+      params.callback = cbName;
+      const qs = Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+      s = document.createElement('script');
+      s.src = API + '?' + qs;
+      s.onerror = function(){ cleanup(); reject('通信エラー'); };
+      document.body.appendChild(s);
+    });
+  }
+
+  function render(board){
+    const wrap = document.getElementById('events');
+    wrap.innerHTML = '';
+    if(!board || board.length===0){ document.getElementById('empty').style.display='block'; return; }
+    document.getElementById('empty').style.display='none';
+    board.forEach(function(ev){
+      const pct = ev.line>0 ? Math.min(100, Math.round(ev.joinCount/ev.line*100)) : 100;
+      const remain = ev.line - ev.joinCount;
+      const lineMsg = (remain>0) ? ('あと'+remain+'人で開催ライン') : '<span class="line-ok">開催ライン到達！</span>';
+      const div = document.createElement('div');
+      div.className = 'event';
+      div.innerHTML =
+        '<div class="ev-head"><span class="ev-date">'+ev.date+'</span><span class="'+tagClass(ev.kind)+'">'+escapeHtml(ev.kind)+'</span></div>'+
+        '<div class="ev-sub">'+escapeHtml(ev.time)+'　'+escapeHtml(ev.venue)+'</div>'+
+        '<div class="line-info">参加 '+ev.joinCount+' ／ 開催ライン '+ev.line+'　'+lineMsg+'</div>'+
+        '<div class="bar-wrap"><div class="bar" style="width:'+pct+'%"></div></div>'+
+        '<div class="roster"><span class="label">◯参加('+ev.joinCount+')</span> '+(ev.join.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
+        '<div class="roster"><span class="label">△未定('+ev.undecidedCount+')</span> '+(ev.undecided.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
+        '<div class="btns">'+
+          '<button data-st="参加" class="'+(ev.myStatus==='参加'?'on-join':'')+'">◯参加</button>'+
+          '<button data-st="未定" class="'+(ev.myStatus==='未定'?'on-undecided':'')+'">△未定</button>'+
+          '<button data-st="不参加" class="'+(ev.myStatus==='不参加'?'on-absent':'')+'">×不参加</button>'+
+        '</div>'+
+        '<div class="mystat">あなたの回答：'+(ev.myStatus||'未回答')+'</div>';
+      const btns = div.querySelectorAll('.btns button');
+      btns.forEach(function(b){
+        b.addEventListener('click', function(){ setStatus(ev.eventId, b.getAttribute('data-st'), btns); });
+      });
+      wrap.appendChild(div);
+    });
+  }
+
+  function setStatus(eventId, status, btns){
+    btns.forEach(function(b){ b.disabled = true; });
+    callApi({ action:'setAttendance', userId:userId, eventId:eventId, status:status })
+      .then(function(res){
+        if(res && res.ok){ return refresh(); }
+        alert('保存に失敗：' + (res && res.error)); btns.forEach(function(b){ b.disabled=false; });
+      })
+      .catch(function(e){ alert('保存に失敗：'+e); btns.forEach(function(b){ b.disabled=false; }); });
+  }
+
+  function refresh(){
+    return callApi({ action:'getBoard', userId:userId }).then(function(res){
+      if(res && res.ok) render(res.data);
+    });
+  }
+
+  async function main(){
+    try {
+      loadingEl.textContent = 'LIFF初期化中…';
+      await liff.init({ liffId: LIFF_ID });
+      if(!liff.isLoggedIn()){ liff.login(); return; }
+      const profile = await liff.getProfile();
+      userId = profile.userId;
+      await refresh();
+      loadingEl.style.display='none';
+      document.getElementById('container').style.display='block';
+    } catch(err){
+      loadingEl.textContent = '初期化エラー：' + err;
+    }
+  }
+  main();
+</script>
+</body>
+</html>
