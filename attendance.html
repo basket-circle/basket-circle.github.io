@@ -121,10 +121,10 @@
         '<div class="bar-wrap"><div class="bar" style="width:'+pct+'%"></div></div>'+
         '<div class="breakdown">'+breakdownText(ev.join)+'</div>'+
         '<div class="roster"><span class="label">◯参加('+ev.joinCount+')</span><br>'+(ev.join.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
-        '<div class="roster"><span class="label">△未定('+ev.undecidedCount+')</span><br>'+(ev.undecided.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
+        '<div class="roster"><span class="label">△検討中('+ev.undecidedCount+')</span><br>'+(ev.undecided.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
         '<div class="btns">'+
           '<button data-st="参加" class="'+(ev.myStatus==='参加'?'on-join':'')+'">◯参加</button>'+
-          '<button data-st="未定" class="'+(ev.myStatus==='未定'?'on-undecided':'')+'">△未定</button>'+
+          '<button data-st="検討中" class="'+(ev.myStatus==='検討中'?'on-undecided':'')+'">△検討中</button>'+
           '<button data-st="不参加" class="'+(ev.myStatus==='不参加'?'on-absent':'')+'">×不参加</button>'+
         '</div>'+
         '<div class="mystat">あなたの回答：'+(ev.myStatus||'未回答')+'</div>';
@@ -142,7 +142,7 @@
       ev.undecided = ev.undecided.filter(function(p){ return !p.me; });
       const me = { displayName: myProfile.displayName, level: myProfile.level, category: myProfile.category, transport: myProfile.transport, me: true };
       if (status === '参加') ev.join.push(me);
-      else if (status === '未定') ev.undecided.push(me);
+      else if (status === '検討中') ev.undecided.push(me);
       ev.joinCount = ev.join.length;
       ev.undecidedCount = ev.undecided.length;
       ev.myStatus = status;
