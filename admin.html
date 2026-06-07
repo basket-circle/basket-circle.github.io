@@ -74,8 +74,44 @@
       <div id="eventList"></div>
     </div>
 
-    <div id="pane-members" class="pane"><div class="empty">次のステップ（Phase B）で実装します。</div></div>
-    <div id="pane-contact" class="pane"><div class="empty">次のステップ（Phase B）で実装します。</div></div>
+    <div id="pane-members" class="pane">
+      <div class="card">
+        <div style="font-weight:bold;margin-bottom:6px;">出欠状況の確認（不参加も表示）</div>
+        <select id="attEventSel"></select>
+        <div id="attDetail" style="margin-top:10px;"></div>
+      </div>
+      <div class="card">
+        <div style="font-weight:bold;margin-bottom:6px;">出欠を代理で変更</div>
+        <label class="f">活動</label>
+        <select id="proxyEventSel"></select>
+        <label class="f">メンバー</label>
+        <select id="proxyMemberSel"></select>
+        <label class="f">状態</label>
+        <select id="proxyStatusSel"><option>参加</option><option>検討中</option><option>不参加</option></select>
+        <button class="act solid" id="btnProxy" style="margin-top:12px;">この内容で設定</button>
+        <div class="msg" id="proxyMsg"></div>
+      </div>
+      <div class="card">
+        <div class="row-top"><span style="font-weight:bold;">メンバー名簿</span><button class="act gray" id="btnLoadMembers">表示</button></div>
+        <div id="memberList"></div>
+      </div>
+      <div class="card">
+        <div class="row-top"><span style="font-weight:bold;">未登録の友だち</span><button class="act gray" id="btnLoadUnreg">表示</button></div>
+        <div id="unregList"></div>
+      </div>
+    </div>
+    <div id="pane-contact" class="pane">
+      <div class="card">
+        <label class="f">対象の活動を選択</label>
+        <select id="contactEventSel"></select>
+        <div style="margin-top:12px;">
+          <button class="act solid" id="btnSendCard">📨 出欠カードを今すぐ送る</button>
+          <button class="act danger" id="btnCancelNotice">⚠️ 中止のお知らせを送る</button>
+        </div>
+        <div class="msg" id="contactMsg"></div>
+        <div class="mini" style="margin-top:8px;">※どちらも対象メンバー全員に届きます。</div>
+      </div>
+    </div>
 
     <div id="pane-admins" class="pane">
       <div class="card">
@@ -152,6 +188,8 @@
       el('pane-'+b.getAttribute('data-tab')).classList.add('active');
       if(b.getAttribute('data-tab')==='events') loadEvents();
       if(b.getAttribute('data-tab')==='admins') loadAdmins();
+      if(b.getAttribute('data-tab')==='members') loadMembersTab();
+      if(b.getAttribute('data-tab')==='contact') loadContactTab();
     });
   });
 
@@ -263,6 +301,81 @@
 
   el('copyId').addEventListener('click', function(){ const b=this; try{ navigator.clipboard.writeText(userId); b.textContent='コピーしました'; }catch(e){ alert(userId); } });
   el('reload').addEventListener('click', function(){ location.reload(); });
+
+  // ===== Phase B: メンバー・出欠 / 連絡 =====
+  function fillEventOptions(selId, evs){
+    el(selId).innerHTML = '<option value="">選択してください</option>' + evs.map(function(ev){
+      return '<option value="'+escapeHtml(ev.eventId)+'">'+escapeHtml((ev.dateLabel||ev.dateIso)+' '+ev.kind+(ev.name?(' '+ev.name):''))+'</option>';
+    }).join('');
+  }
+  function loadMembersTab(){
+    callApi({ action:'adminGetEvents', userId:userId }).then(function(res){
+      if(res&&res.ok){ fillEventOptions('attEventSel', res.data); fillEventOptions('proxyEventSel', res.data); }
+    });
+    callApi({ action:'adminGetMembers', userId:userId }).then(function(res){
+      if(res&&res.ok){
+        window._members = res.data;
+        el('proxyMemberSel').innerHTML = '<option value="">選択してください</option>' + res.data.map(function(m){
+          return '<option value="'+escapeHtml(m.userId)+'">'+escapeHtml(m.displayName)+'</option>';
+        }).join('');
+      }
+    });
+  }
+  function attLst(arr){ return arr.length ? arr.map(function(p){ return escapeHtml((p.level?('['+p.level+']'):'')+p.name); }).join('、') : '—'; }
+  el('attEventSel').addEventListener('change', function(){
+    const ev=this.value; if(!ev){ el('attDetail').innerHTML=''; return; }
+    el('attDetail').innerHTML='<div class="empty">読み込み中…</div>';
+    callApi({ action:'adminGetAttendanceDetail', userId:userId, eventId:ev }).then(function(res){
+      if(!res||!res.ok){ el('attDetail').innerHTML='<div class="empty">取得失敗：'+(res&&res.error)+'</div>'; return; }
+      const d=res.data;
+      el('attDetail').innerHTML =
+        '<div class="sub"><b>◯参加('+d.join.length+')</b>　'+attLst(d.join)+'</div>'+
+        '<div class="sub"><b>△検討中('+d.undecided.length+')</b>　'+attLst(d.undecided)+'</div>'+
+        '<div class="sub"><b>×不参加('+d.absent.length+')</b>　'+attLst(d.absent)+'</div>'+
+        (d.guests.length?'<div class="sub"><b>体験('+d.guests.length+')</b>　'+attLst(d.guests)+'</div>':'');
+    }).catch(function(e){ el('attDetail').innerHTML='<div class="empty">通信エラー：'+e+'</div>'; });
+  });
+  el('btnProxy').addEventListener('click', function(){
+    const ev=el('proxyEventSel').value, mem=el('proxyMemberSel').value, st=el('proxyStatusSel').value;
+    if(!ev||!mem){ alert('活動とメンバーを選んでください'); return; }
+    const btn=this; btn.disabled=true;
+    callApi({ action:'adminSetAttendance', userId:userId, targetUserId:mem, eventId:ev, status:st })
+      .then(function(r){ btn.disabled=false; if(r&&r.ok){ el('proxyMsg').textContent='設定しました：'+st; if(el('attEventSel').value===ev) el('attEventSel').dispatchEvent(new Event('change')); } else alert('失敗：'+(r&&r.error)); })
+      .catch(function(e){ btn.disabled=false; alert('失敗：'+e); });
+  });
+  el('btnLoadMembers').addEventListener('click', function(){
+    el('memberList').innerHTML='<div class="empty">読み込み中…</div>';
+    function render(arr){ el('memberList').innerHTML = arr.length ? arr.map(function(m){ return '<div class="sub">'+escapeHtml(m.displayName)+'　<span class="mini">'+escapeHtml([m.level,m.category,m.transport].filter(Boolean).join('・'))+'</span></div>'; }).join('') : '<div class="empty">メンバーがいません</div>'; }
+    if(window._members) render(window._members);
+    else callApi({ action:'adminGetMembers', userId:userId }).then(function(r){ if(r&&r.ok){ window._members=r.data; render(r.data); } });
+  });
+  el('btnLoadUnreg').addEventListener('click', function(){
+    el('unregList').innerHTML='<div class="empty">読み込み中…（LINE名を取得します）</div>';
+    callApi({ action:'adminGetUnregistered', userId:userId }).then(function(r){
+      if(!r||!r.ok){ el('unregList').innerHTML='<div class="empty">取得失敗：'+(r&&r.error)+'</div>'; return; }
+      el('unregList').innerHTML = r.data.length ? r.data.map(function(u){ return '<div class="sub">'+escapeHtml(u.lineName||'(名前不明)')+'</div>'; }).join('') : '<div class="empty">未登録の友だちはいません🎉</div>';
+    }).catch(function(e){ el('unregList').innerHTML='<div class="empty">通信エラー：'+e+'</div>'; });
+  });
+
+  function loadContactTab(){
+    callApi({ action:'adminGetEvents', userId:userId }).then(function(res){ if(res&&res.ok) fillEventOptions('contactEventSel', res.data); });
+  }
+  el('btnSendCard').addEventListener('click', function(){
+    const ev=el('contactEventSel').value; if(!ev){ alert('活動を選んでください'); return; }
+    if(!confirm('この活動の出欠カードを全員に送信しますか？')) return;
+    const btn=this; btn.disabled=true;
+    callApi({ action:'adminSendCard', userId:userId, eventId:ev })
+      .then(function(r){ btn.disabled=false; el('contactMsg').textContent = (r&&r.ok)?'カードを送信しました📨':'失敗：'+(r&&r.error); })
+      .catch(function(e){ btn.disabled=false; el('contactMsg').textContent='失敗：'+e; });
+  });
+  el('btnCancelNotice').addEventListener('click', function(){
+    const ev=el('contactEventSel').value; if(!ev){ alert('活動を選んでください'); return; }
+    if(!confirm('この活動の【中止のお知らせ】を全員に送信しますか？')) return;
+    const btn=this; btn.disabled=true;
+    callApi({ action:'adminCancelNotice', userId:userId, eventId:ev })
+      .then(function(r){ btn.disabled=false; el('contactMsg').textContent = (r&&r.ok)?'中止通知を送信しました⚠️':'失敗：'+(r&&r.error); })
+      .catch(function(e){ btn.disabled=false; el('contactMsg').textContent='失敗：'+e; });
+  });
 
   async function main(){
     try {
