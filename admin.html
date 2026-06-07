@@ -266,10 +266,10 @@
       line: el('evLine').value, name: el('evName').value.trim(),
       isPublic: el('evPublic').checked
     };
-    const btn=this; btn.disabled=true;
+    const btn=this; const orig=btn.textContent; btn.disabled=true; btn.textContent='保存中…';
     callApi({ action:'adminSaveEvent', userId:userId, payload: JSON.stringify(payload) })
-      .then(function(r){ btn.disabled=false; if(r&&r.ok){ el('eventModal').style.display='none'; loadEvents(); } else { alert('保存に失敗：'+(r&&r.error)); } })
-      .catch(function(e){ btn.disabled=false; alert('保存に失敗：'+e); });
+      .then(function(r){ btn.disabled=false; btn.textContent=orig; if(r&&r.ok){ el('eventModal').style.display='none'; loadEvents(); } else { alert('保存に失敗：'+(r&&r.error)); } })
+      .catch(function(e){ btn.disabled=false; btn.textContent=orig; alert('保存に失敗：'+e); });
   });
   el('btnGen').addEventListener('click', function(){
     const w = prompt('先の何週ぶんの日曜を生成しますか？（下書きで作成）', '8');
