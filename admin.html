@@ -115,11 +115,10 @@
 
     <div id="pane-admins" class="pane">
       <div class="card">
-        <label class="f">管理者を追加（LINEユーザーID）</label>
-        <input type="text" id="newAdminId" placeholder="U で始まるユーザーID">
-        <label class="f">名前メモ（任意）</label>
-        <input type="text" id="newAdminName" placeholder="例：佐藤（副代表）">
-        <button class="act solid" id="btnAddAdmin" style="margin-top:12px;">追加する</button>
+        <label class="f">メンバーから選んで管理者に追加</label>
+        <select id="newAdminMember"></select>
+        <button class="act solid" id="btnAddAdmin" style="margin-top:12px;">管理者に追加</button>
+        <div class="mini" style="margin-top:6px;">※プロフィール登録済みのメンバーから選べます。IDの入力は不要です。</div>
         <div class="msg" id="adminMsg"></div>
       </div>
       <div id="adminList"></div>
@@ -211,6 +210,7 @@
           '<div class="sub">'+escapeHtml(ev.start+'〜'+ev.end)+'　'+escapeHtml(venue)+'　開催ライン'+ev.line+'</div>'+
           '<button class="act" data-edit="'+escapeHtml(ev.eventId)+'">編集</button>'+
           '<button class="act gray" data-pub="'+escapeHtml(ev.eventId)+'" data-val="'+(ev.isPublic?'0':'1')+'">'+(ev.isPublic?'非公開にする':'公開する')+'</button>'+
+          '<button class="act danger" data-del="'+escapeHtml(ev.eventId)+'">削除</button>'+
         '</div>';
       }).join('');
       el('eventList').querySelectorAll('[data-edit]').forEach(function(b){
@@ -222,6 +222,14 @@
           callApi({ action:'adminSetPublish', userId:userId, eventId:b.getAttribute('data-pub'), isPublic:b.getAttribute('data-val') })
             .then(function(r){ if(r&&r.ok) loadEvents(); else { alert('失敗：'+(r&&r.error)); b.disabled=false; } })
             .catch(function(e){ alert('失敗：'+e); b.disabled=false; });
+        });
+      });
+      el('eventList').querySelectorAll('[data-del]').forEach(function(b){
+        b.addEventListener('click', function(){
+          if(!confirm('この活動日を削除しますか？\n（出欠・体験者の記録も一緒に削除されます）')) return;
+          callApi({ action:'adminDeleteEvent', userId:userId, eventId:b.getAttribute('data-del') })
+            .then(function(r){ if(r&&r.ok) loadEvents(); else alert('失敗：'+(r&&r.error)); })
+            .catch(function(e){ alert('失敗：'+e); });
         });
       });
     }).catch(function(e){ el('eventList').innerHTML='<div class="empty">通信エラー：'+e+'</div>'; });
@@ -270,6 +278,9 @@
 
   function loadAdmins(){
     el('adminList').innerHTML = '<div class="empty">読み込み中…</div>';
+    callApi({ action:'adminGetMembers', userId:userId }).then(function(r){
+      if(r&&r.ok){ el('newAdminMember').innerHTML = '<option value="">選択してください</option>' + r.data.map(function(m){ return '<option value="'+escapeHtml(m.userId)+'">'+escapeHtml(m.displayName)+'</option>'; }).join(''); }
+    });
     callApi({ action:'adminListAdmins', userId:userId }).then(function(res){
       if(!res||!res.ok){ el('adminList').innerHTML='<div class="empty">取得に失敗：'+(res&&res.error)+'</div>'; return; }
       el('adminList').innerHTML = res.data.map(function(a){
@@ -290,11 +301,13 @@
     }).catch(function(e){ el('adminList').innerHTML='<div class="empty">通信エラー：'+e+'</div>'; });
   }
   el('btnAddAdmin').addEventListener('click', function(){
-    const id = el('newAdminId').value.trim();
-    if(!id){ alert('ユーザーIDを入力してください'); return; }
-    callApi({ action:'adminAddAdmin', userId:userId, newUserId:id, name:el('newAdminName').value.trim() })
+    const sel = el('newAdminMember');
+    const id = sel.value;
+    if(!id){ alert('メンバーを選んでください'); return; }
+    const name = sel.options[sel.selectedIndex].text;
+    callApi({ action:'adminAddAdmin', userId:userId, newUserId:id, name:name })
       .then(function(r){
-        if(r&&r.ok){ el('adminMsg').textContent = r.data.added?'追加しました':(r.data.reason||'追加済み'); el('newAdminId').value=''; el('newAdminName').value=''; loadAdmins(); }
+        if(r&&r.ok){ el('adminMsg').textContent = r.data.added?'追加しました':(r.data.reason||'追加済み'); loadAdmins(); }
         else alert('失敗：'+(r&&r.error));
       }).catch(function(e){ alert('失敗：'+e); });
   });
