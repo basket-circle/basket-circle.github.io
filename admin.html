@@ -227,9 +227,12 @@
       el('eventList').querySelectorAll('[data-del]').forEach(function(b){
         b.addEventListener('click', function(){
           if(!confirm('この活動日を削除しますか？\n（出欠・体験者の記録も一緒に削除されます）')) return;
+          const card = b.closest('.card');
+          if(card) card.style.opacity = '0.4';   // 即座に薄くして反応を示す
+          b.textContent = '削除中…'; b.disabled = true;
           callApi({ action:'adminDeleteEvent', userId:userId, eventId:b.getAttribute('data-del') })
-            .then(function(r){ if(r&&r.ok) loadEvents(); else alert('失敗：'+(r&&r.error)); })
-            .catch(function(e){ alert('失敗：'+e); });
+            .then(function(r){ if(r&&r.ok){ if(card) card.remove(); } else { alert('失敗：'+(r&&r.error)); loadEvents(); } })
+            .catch(function(e){ alert('失敗：'+e); loadEvents(); });
         });
       });
     }).catch(function(e){ el('eventList').innerHTML='<div class="empty">通信エラー：'+e+'</div>'; });
