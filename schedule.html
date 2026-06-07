@@ -7,7 +7,12 @@
 <style>
  body{font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;margin:0;padding:16px;background:#f7f8fa;color:#333;}
  h1{font-size:20px;text-align:center;}
- #loading{text-align:center;padding:40px;color:#888;}
+ #loading{text-align:center;padding:56px 0;}
+ .ball{font-size:46px;line-height:1;animation:dribble .5s cubic-bezier(.3,0,.5,1) infinite alternate;}
+ @keyframes dribble{from{transform:translateY(-24px)}to{transform:translateY(0)}}
+ .shadow{width:34px;height:7px;margin:6px auto 0;background:rgba(0,0,0,.12);border-radius:50%;animation:sh .5s cubic-bezier(.3,0,.5,1) infinite alternate;}
+ @keyframes sh{from{transform:scaleX(.55);opacity:.35}to{transform:scaleX(1);opacity:.65}}
+ .loadmsg{margin-top:14px;font-size:14px;color:#888;}
  .item{background:#fff;border-radius:12px;padding:14px 16px;margin:0 auto 12px;max-width:460px;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;align-items:flex-start;gap:12px;}
  .date{font-size:16px;font-weight:bold;min-width:66px;}
  .body{flex:1;}
@@ -21,7 +26,11 @@
 </style>
 </head>
 <body>
- <div id="loading">読み込み中…</div>
+ <div id="loading">
+   <div class="ball">🏀</div>
+   <div class="shadow"></div>
+   <div class="loadmsg">読み込み中…</div>
+ </div>
  <div id="container" style="display:none;">
   <h1>📅 今後の予定</h1>
   <div id="list"></div>
@@ -60,7 +69,7 @@
  }
  async function main(){
    try{
-     loadingEl.textContent='LIFF初期化中…';
+     // 読み込み中はバスケのアニメ表示（テキストで上書きしない）
      await liff.init({liffId:LIFF_ID});
      if(!liff.isLoggedIn()){liff.login();return;}
      const profile=await liff.getProfile();
