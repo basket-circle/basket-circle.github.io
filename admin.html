@@ -222,7 +222,7 @@
           (ev.name?'<div class="sub" style="color:#1a73e8;font-weight:bold;">'+escapeHtml(ev.name)+'</div>':'')+
           '<div class="sub">'+escapeHtml(ev.start+'〜'+ev.end)+'　'+escapeHtml(venue)+'　開催ライン'+ev.line+'</div>'+
           '<button class="act" data-edit="'+escapeHtml(ev.eventId)+'">編集</button>'+
-          '<button class="act gray" data-pub="'+escapeHtml(ev.eventId)+'" data-val="'+(ev.isPublic?'0':'1')+'">'+(ev.isPublic?'非公開にする':'公開する')+'</button>'+
+          '<button class="act gray" data-pub="'+escapeHtml(ev.eventId)+'" data-val="'+(ev.isPublic?'false':'true')+'">'+(ev.isPublic?'非公開にする':'公開する')+'</button>'+
           '<button class="act danger" data-del="'+escapeHtml(ev.eventId)+'">削除</button>'+
         '</div>';
       }).join('');
