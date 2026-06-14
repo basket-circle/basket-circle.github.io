@@ -64,6 +64,7 @@
       <button data-tab="members">👥 メンバー</button>
       <button data-tab="contact">📣 連絡</button>
       <button data-tab="admins">🔑 管理者</button>
+      <button data-tab="settings">⚙連絡</button>
     </div>
 
     <div id="pane-events" class="pane active">
@@ -122,6 +123,22 @@
         <div class="msg" id="adminMsg"></div>
       </div>
       <div id="adminList"></div>
+    </div>
+
+    <div id="pane-settings" class="pane">
+      <div class="card">
+        <div style="font-weight:bold;margin-bottom:6px;">管理者不在モード</div>
+        <label class="chk"><input type="checkbox" id="awayToggle"> 不在中にする</label>
+        <div class="mini" style="margin-top:6px;">ONの間、届いたメッセージに「管理者不在＋チャットへ」を自動返信します。OFFのときは自動返信しません（手動で対応）。</div>
+        <div class="msg" id="awayMsg"></div>
+      </div>
+      <div class="card">
+        <div style="font-weight:bold;margin-bottom:6px;">全体に一斉送信</div>
+        <textarea id="bcText" rows="4" style="width:100%;box-sizing:border-box;padding:10px;font-size:16px;border:1px solid #ccc;border-radius:8px;" placeholder="全員に送るメッセージを入力"></textarea>
+        <button class="act solid" id="btnBroadcast" style="margin-top:10px;">全員に送信</button>
+        <div class="mini" style="margin-top:6px;">※全員（友だち＋メンバー）に届きます。画像・動画は送れません（リンクは本文にURLを書けばOK）。</div>
+        <div class="msg" id="bcMsg"></div>
+      </div>
     </div>
   </div>
 
@@ -189,6 +206,7 @@
       if(b.getAttribute('data-tab')==='admins') loadAdmins();
       if(b.getAttribute('data-tab')==='members') loadMembersTab();
       if(b.getAttribute('data-tab')==='contact') loadContactTab();
+      if(b.getAttribute('data-tab')==='settings') loadSettings();
     });
   });
 
@@ -391,6 +409,29 @@
     callApi({ action:'adminCancelNotice', userId:userId, eventId:ev })
       .then(function(r){ btn.disabled=false; el('contactMsg').textContent = (r&&r.ok)?'中止通知を送信しました⚠️':'失敗：'+(r&&r.error); })
       .catch(function(e){ btn.disabled=false; el('contactMsg').textContent='失敗：'+e; });
+  });
+
+  // ===== ⚙連絡（管理者不在 / 一斉送信）=====
+  function loadSettings(){
+    callApi({ action:'adminGetAway', userId:userId }).then(function(r){
+      if(r&&r.ok) el('awayToggle').checked = !!r.data.away;
+    });
+  }
+  el('awayToggle').addEventListener('change', function(){
+    const on = this.checked;
+    el('awayMsg').textContent = '更新中…';
+    callApi({ action:'adminSetAway', userId:userId, on: on?'on':'off' })
+      .then(function(r){ el('awayMsg').textContent = (r&&r.ok) ? (r.data.away?'不在モード：ON':'不在モード：OFF') : ('失敗：'+(r&&r.error)); })
+      .catch(function(e){ el('awayMsg').textContent='失敗：'+e; });
+  });
+  el('btnBroadcast').addEventListener('click', function(){
+    const text = el('bcText').value.trim();
+    if(!text){ alert('本文を入力してください'); return; }
+    if(!confirm('この内容を全員に送信しますか？')) return;
+    const btn=this; btn.disabled=true; el('bcMsg').textContent='送信中…';
+    callApi({ action:'adminBroadcast', userId:userId, text:text })
+      .then(function(r){ btn.disabled=false; if(r&&r.ok){ el('bcMsg').textContent=r.data.sent+'人に送信しました📨'; el('bcText').value=''; } else el('bcMsg').textContent='失敗：'+(r&&r.error); })
+      .catch(function(e){ btn.disabled=false; el('bcMsg').textContent='失敗：'+e; });
   });
 
   async function main(){
