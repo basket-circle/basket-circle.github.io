@@ -64,7 +64,6 @@
       <button data-tab="members">👥 メンバー</button>
       <button data-tab="contact">📣 連絡</button>
       <button data-tab="admins">🔑 管理者</button>
-      <button data-tab="settings">⚙連絡</button>
     </div>
 
     <div id="pane-events" class="pane active">
@@ -112,20 +111,6 @@
         <div class="msg" id="contactMsg"></div>
         <div class="mini" style="margin-top:8px;">※どちらも対象メンバー全員に届きます。</div>
       </div>
-    </div>
-
-    <div id="pane-admins" class="pane">
-      <div class="card">
-        <label class="f">メンバーから選んで管理者に追加</label>
-        <select id="newAdminMember"></select>
-        <button class="act solid" id="btnAddAdmin" style="margin-top:12px;">管理者に追加</button>
-        <div class="mini" style="margin-top:6px;">※プロフィール登録済みのメンバーから選べます。IDの入力は不要です。</div>
-        <div class="msg" id="adminMsg"></div>
-      </div>
-      <div id="adminList"></div>
-    </div>
-
-    <div id="pane-settings" class="pane">
       <div class="card">
         <div style="font-weight:bold;margin-bottom:6px;">管理者不在モード</div>
         <label class="chk"><input type="checkbox" id="awayToggle"> 不在中にする</label>
@@ -139,6 +124,17 @@
         <div class="mini" style="margin-top:6px;">※全員（友だち＋メンバー）に届きます。画像・動画は送れません（リンクは本文にURLを書けばOK）。</div>
         <div class="msg" id="bcMsg"></div>
       </div>
+    </div>
+
+    <div id="pane-admins" class="pane">
+      <div class="card">
+        <label class="f">メンバーから選んで管理者に追加</label>
+        <select id="newAdminMember"></select>
+        <button class="act solid" id="btnAddAdmin" style="margin-top:12px;">管理者に追加</button>
+        <div class="mini" style="margin-top:6px;">※プロフィール登録済みのメンバーから選べます。IDの入力は不要です。</div>
+        <div class="msg" id="adminMsg"></div>
+      </div>
+      <div id="adminList"></div>
     </div>
   </div>
 
@@ -206,7 +202,6 @@
       if(b.getAttribute('data-tab')==='admins') loadAdmins();
       if(b.getAttribute('data-tab')==='members') loadMembersTab();
       if(b.getAttribute('data-tab')==='contact') loadContactTab();
-      if(b.getAttribute('data-tab')==='settings') loadSettings();
     });
   });
 
@@ -393,6 +388,7 @@
 
   function loadContactTab(){
     callApi({ action:'adminGetEvents', userId:userId }).then(function(res){ if(res&&res.ok) fillEventOptions('contactEventSel', res.data); });
+    loadSettings();
   }
   el('btnSendCard').addEventListener('click', function(){
     const ev=el('contactEventSel').value; if(!ev){ alert('活動を選んでください'); return; }
