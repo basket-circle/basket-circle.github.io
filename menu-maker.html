@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>リッチメニュー画像メーカー（6分割）</title>
+<style>
+  body { font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif; margin:0; padding:20px; background:#f4f5f7; color:#333; }
+  h1 { font-size:18px; }
+  p { font-size:13px; color:#555; line-height:1.7; }
+  #preview { width:100%; max-width:625px; border:1px solid #ccc; border-radius:8px; display:block; margin:12px 0; }
+  button { padding:12px 20px; font-size:15px; font-weight:bold; border:none; border-radius:8px; background:#06c755; color:#fff; cursor:pointer; }
+  code { background:#eee; padding:1px 5px; border-radius:4px; }
+  .map { font-size:13px; line-height:1.9; background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:12px 16px; }
+</style>
+</head>
+<body>
+  <h1>🍀 リッチメニュー画像メーカー（6分割 3×2）</h1>
+  <p>
+    LINE公式アカウントの大サイズリッチメニュー用（<b>2500 × 1686 px</b>）。<br>
+    下のプレビューを確認し、「⬇ richmenu.png をダウンロード」で保存 → OA Manager の
+    <b>6分割テンプレート</b>に画像をアップし、各エリアに下記のURLを設定してください。
+  </p>
+
+  <canvas id="canvas" width="2500" height="1686" style="display:none;"></canvas>
+  <img id="preview" alt="preview">
+  <button id="dl">⬇ richmenu.png をダウンロード</button>
+
+  <h3 style="margin-top:24px;">OA Manager の各エリアに設定するリンク</h3>
+  <div class="map" id="map"></div>
+  <p style="margin-top:16px;">
+    ⚠️ <b>自由練習のLIFF</b>は新規発行後にURLを差し替えてください（現状プレースホルダ）。<br>
+    ⚠️ <b>予備エリア（🍀）</b>はリンクなし（アクション「設定しない」）でOK。押されても何も起きません。
+  </p>
+
+<script>
+  // ==== ここを編集すればラベル・色・リンクを変えられます ====
+  const CELLS = [
+    { emoji:'📋', label:'出席票',     fg:'#06c755', bg:'#e8f8ef',
+      url:'https://liff.line.me/2010311760-vcFkg3tX' },
+    { emoji:'📅', label:'今後の予定', fg:'#1a73e8', bg:'#e8f0fe',
+      url:'https://liff.line.me/2010311760-9NYeuLhZ' },
+    { emoji:'🏀', label:'自由練習',   fg:'#e08600', bg:'#fff4e0',
+      url:'（新規：自由練習用LIFFのURLに差し替え）' },
+    { emoji:'👤', label:'プロフィール', fg:'#7e57c2', bg:'#f1ecfa',
+      url:'https://liff.line.me/2010311760-E5ENH95n' },
+    { emoji:'💬', label:'チャット',   fg:'#26a69a', bg:'#e3f4f2',
+      url:'https://line.me/R/ti/g/DKQa98ZThm' },
+    { emoji:'🍀', label:'',           fg:'#9aa7ad', bg:'#eef1f2',
+      url:'（予備：リンクなし）' },
+  ];
+  // =========================================================
+
+  const W = 2500, H = 1686, COLS = 3, ROWS = 2;
+  const cw = W / COLS, ch = H / ROWS;
+  const cv = document.getElementById('canvas');
+  const g = cv.getContext('2d');
+
+  function draw(){
+    g.clearRect(0,0,W,H);
+    g.fillStyle = '#ffffff';
+    g.fillRect(0,0,W,H);
+
+    CELLS.forEach(function(c, i){
+      const col = i % COLS, row = Math.floor(i / COLS);
+      const x = col * cw, y = row * ch;
+
+      // セル背景（内側に少し余白を取って角丸）
+      const pad = 16;
+      g.fillStyle = c.bg;
+      roundRect(x+pad, y+pad, cw-pad*2, ch-pad*2, 28);
+      g.fill();
+
+      // 絵文字
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.font = '210px -apple-system,"Hiragino Kaku Gothic ProN",sans-serif';
+      g.fillStyle = '#222';
+      const hasLabel = !!c.label;
+      g.fillText(c.emoji, x + cw/2, y + ch/2 + (hasLabel ? -60 : 0));
+
+      // ラベル
+      if (hasLabel){
+        g.font = 'bold 92px -apple-system,"Hiragino Kaku Gothic ProN",sans-serif';
+        g.fillStyle = c.fg;
+        g.fillText(c.label, x + cw/2, y + ch/2 + 130);
+      }
+    });
+
+    // 区切り線（薄く）
+    g.strokeStyle = '#e3e6ea';
+    g.lineWidth = 4;
+    for (let i=1;i<COLS;i++){ line(i*cw,0,i*cw,H); }
+    for (let i=1;i<ROWS;i++){ line(0,i*ch,W,i*ch); }
+
+    document.getElementById('preview').src = cv.toDataURL('image/png');
+  }
+
+  function roundRect(x,y,w,h,r){
+    g.beginPath();
+    g.moveTo(x+r,y);
+    g.arcTo(x+w,y,x+w,y+h,r);
+    g.arcTo(x+w,y+h,x,y+h,r);
+    g.arcTo(x,y+h,x,y,r);
+    g.arcTo(x,y,x+w,y,r);
+    g.closePath();
+  }
+  function line(x1,y1,x2,y2){ g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke(); }
+
+  document.getElementById('dl').addEventListener('click', function(){
+    const a = document.createElement('a');
+    a.download = 'richmenu.png';
+    a.href = cv.toDataURL('image/png');
+    a.click();
+  });
+
+  // リンク早見表
+  const mapEl = document.getElementById('map');
+  const posName = ['左上','中央上','右上','左下','中央下','右下'];
+  mapEl.innerHTML = CELLS.map(function(c, i){
+    const nm = c.label || '（予備）';
+    return '<div><b>'+posName[i]+'</b>：'+c.emoji+' '+nm+' → <code>'+c.url+'</code></div>';
+  }).join('');
+
+  draw();
+</script>
+</body>
+</html>

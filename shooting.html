@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>個人練</title>
+<title>自由練習</title>
 <style>
   body { font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif; margin:0; padding:16px; background:#f7f8fa; color:#333; }
   h1 { font-size:20px; text-align:center; }
@@ -31,11 +31,11 @@
   </div>
 
   <div id="container" style="display:none;">
-    <h1>🏀 個人練</h1>
+    <h1>🏀 自由練習</h1>
 
     <div class="card">
       <div class="intro">
-        自分のペースでシューティング（シュート練習）ができる時間です🎯<br>
+        自分のペースで、シュートを中心に自由に練習できる時間です🎯<br>
         手ぶらでOK・途中参加や途中退出も自由。通常活動と同じ日・同じ体育館の
         <b>となりのコート</b>で開催します。
       </div>
@@ -83,7 +83,7 @@
       if (state && state.reason === 'other'){
         el.innerHTML =
           '<div class="rest">'+escapeHtml(state.date)+' は【'+escapeHtml(state.kind)+'】のため、'+
-          '<br>シューティング個人練は<b>お休み</b>です🙏<br>'+
+          '<br>自由練習は<b>お休み</b>です🙏<br>'+
           '<span style="font-weight:normal;font-size:13px;color:#888;">（となりのコートが使えません）</span></div>';
       } else {
         el.innerHTML = '<div class="rest">次回の活動はまだ未定です。<br>決まったらまたのぞいてみてください😊</div>';
@@ -92,7 +92,7 @@
     }
     const going = !!state.going;
     el.innerHTML =
-      '<div class="headline">'+escapeHtml(state.date)+' は、<br>となりのコートでシューティング個人練ができます🎯</div>'+
+      '<div class="headline">'+escapeHtml(state.date)+' は、<br>となりのコートで自由練習ができます🎯</div>'+
       '<div class="count">今週 '+state.count+'人が行く予定</div>'+
       '<button id="goBtn" class="go-btn'+(going?' on':'')+'">'+(going?'✓ 行く予定（取り消す）':'今週 行く')+'</button>';
     document.getElementById('goBtn').addEventListener('click', toggleGo);
