@@ -361,7 +361,8 @@
         '<div class="sub"><b>◯参加('+d.join.length+')</b>　'+attLst(d.join)+'</div>'+
         '<div class="sub"><b>△検討中('+d.undecided.length+')</b>　'+attLst(d.undecided)+'</div>'+
         '<div class="sub"><b>×不参加('+d.absent.length+')</b>　'+attLst(d.absent)+'</div>'+
-        (d.guests.length?'<div class="sub"><b>体験('+d.guests.length+')</b>　'+attLst(d.guests)+'</div>':'');
+        (d.guests.length?'<div class="sub"><b>体験('+d.guests.length+')</b>　'+attLst(d.guests)+'</div>':'')+
+        (d.shooting&&d.shooting.length?'<div class="sub" style="border-top:1px dashed #e0e0e0;margin-top:6px;padding-top:6px;"><b>🏀自由練習('+d.shooting.length+')</b>　'+attLst(d.shooting)+'</div>':'');
     }).catch(function(e){ el('attDetail').innerHTML='<div class="empty">通信エラー：'+e+'</div>'; });
   });
   el('btnProxy').addEventListener('click', function(){
