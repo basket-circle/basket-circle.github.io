@@ -414,11 +414,17 @@
     });
   }
   el('awayToggle').addEventListener('change', function(){
-    const on = this.checked;
+    const cb = this;
+    const on = cb.checked;
+    cb.disabled = true;   // 送信中は再操作不可（連打による食い違いを防ぐ）
     el('awayMsg').textContent = '更新中…';
     callApi({ action:'adminSetAway', userId:userId, on: on?'on':'off' })
-      .then(function(r){ el('awayMsg').textContent = (r&&r.ok) ? (r.data.away?'不在モード：ON':'不在モード：OFF') : ('失敗：'+(r&&r.error)); })
-      .catch(function(e){ el('awayMsg').textContent='失敗：'+e; });
+      .then(function(r){
+        cb.disabled = false;
+        if(r&&r.ok){ cb.checked = !!r.data.away; el('awayMsg').textContent = r.data.away?'不在モード：ON':'不在モード：OFF'; }
+        else { el('awayMsg').textContent = '失敗：'+(r&&r.error); }
+      })
+      .catch(function(e){ cb.disabled=false; el('awayMsg').textContent='失敗：'+e; });
   });
   el('btnBroadcast').addEventListener('click', function(){
     const text = el('bcText').value.trim();

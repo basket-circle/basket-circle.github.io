@@ -96,6 +96,7 @@
   let userId = null;
   let myProfile = { displayName:'', level:'', category:'', transport:'' };
   let boardData = [];
+  let savingEvents = {};   // eventId -> true（送信中。連打による書き込み競合を防ぐ）
   const loadingEl = document.getElementById('loading');
 
   const LEVEL_TAG = {
@@ -166,6 +167,7 @@
       const remain = ev.line - ev.joinCount;
       const lineMsg = (remain>0) ? ('あと'+remain+'人で開催ライン') : '<span class="line-ok">開催ライン到達！</span>';
       const nameLine = ev.eventName ? '<div style="font-weight:bold;color:#1a73e8;margin-top:4px;">'+escapeHtml(ev.eventName)+'</div>' : '';
+      const saving = !!savingEvents[ev.eventId];
       const div = document.createElement('div');
       div.className = 'event';
       div.innerHTML =
@@ -178,10 +180,10 @@
         '<div class="roster"><span class="label">◯参加('+ev.joinCount+')</span><br>'+(ev.join.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
         '<div class="roster"><span class="label">△検討中('+ev.undecidedCount+')</span><br>'+(ev.undecided.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
         '<button class="add-guest" data-ev="'+escapeHtml(ev.eventId)+'" data-label="'+escapeHtml(ev.date+' '+(ev.eventName||ev.kind))+'">＋ 体験者を追加</button>'+
-        '<div class="btns">'+
-          '<button data-st="参加" class="'+(ev.myStatus==='参加'?'on-join':'')+'">◯参加</button>'+
-          '<button data-st="検討中" class="'+(ev.myStatus==='検討中'?'on-undecided':'')+'">△検討中</button>'+
-          '<button data-st="不参加" class="'+(ev.myStatus==='不参加'?'on-absent':'')+'">×不参加</button>'+
+        '<div class="btns"'+(saving?' style="opacity:.55"':'')+'>'+
+          '<button data-st="参加" class="'+(ev.myStatus==='参加'?'on-join':'')+'"'+(saving?' disabled':'')+'>◯参加</button>'+
+          '<button data-st="検討中" class="'+(ev.myStatus==='検討中'?'on-undecided':'')+'"'+(saving?' disabled':'')+'>△検討中</button>'+
+          '<button data-st="不参加" class="'+(ev.myStatus==='不参加'?'on-absent':'')+'"'+(saving?' disabled':'')+'>×不参加</button>'+
         '</div>'+
         '<div class="mystat">あなたの回答：'+(ev.myStatus||'未回答')+'</div>';
       div.querySelectorAll('.btns button').forEach(function(b){
@@ -198,6 +200,8 @@
   }
 
   function setStatus(eventId, status){
+    if (savingEvents[eventId]) return;   // その活動が送信中なら無視（連打防止）
+    savingEvents[eventId] = true;
     const ev = boardData.find(function(e){ return e.eventId === eventId; });
     if (ev){
       ev.join = ev.join.filter(function(p){ return !p.me; });
@@ -211,8 +215,12 @@
       render(boardData);
     }
     callApi({ action:'setAttendance', userId:userId, eventId:eventId, status:status })
-      .then(function(res){ if(!(res && res.ok)){ alert('保存に失敗：'+(res&&res.error)); refresh(); } })
-      .catch(function(e){ alert('保存に失敗：'+e); refresh(); });
+      .then(function(res){
+        delete savingEvents[eventId];
+        if(!(res && res.ok)){ alert('保存に失敗：'+(res&&res.error)); refresh(); }
+        else { render(boardData); }   // 送信中表示（無効化）を解除
+      })
+      .catch(function(e){ delete savingEvents[eventId]; alert('保存に失敗：'+e); refresh(); });
   }
 
   function refresh(){
