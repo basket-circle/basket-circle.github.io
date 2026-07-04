@@ -56,6 +56,7 @@
   const API = "https://script.google.com/macros/s/AKfycbziHmBXwwFiH6cTbouTHRNLhORzMO629xUBwi0jGIjX9TsJC0iPuse1KAF7r-UDPDnT/exec";
   let userId = null;
   let state = null;              // getShooting の返り値
+  let busy = false;              // 送信中フラグ（連打による競合を防ぐ）
   const loadingEl = document.getElementById('loading');
 
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
@@ -94,23 +95,25 @@
     el.innerHTML =
       '<div class="headline">'+escapeHtml(state.date)+' は、<br>となりのコートで自由練習ができます🎯</div>'+
       '<div class="count">今週 '+state.count+'人が行く予定</div>'+
-      '<button id="goBtn" class="go-btn'+(going?' on':'')+'">'+(going?'✓ 行く予定（取り消す）':'今週 行く')+'</button>';
+      '<button id="goBtn" class="go-btn'+(going?' on':'')+'"'+(busy?' disabled style="opacity:.55"':'')+'>'+(going?'✓ 行く予定（取り消す）':'今週 行く')+'</button>';
     document.getElementById('goBtn').addEventListener('click', toggleGo);
   }
 
   function toggleGo(){
-    if (!state || !state.available) return;
+    if (busy || !state || !state.available) return;   // 送信中は無視（連打による競合防止）
     const next = !state.going;
-    // 楽観的更新
+    busy = true;
+    // 楽観的更新（ボタンは送信中＝無効表示）
     state.going = next;
     state.count = Math.max(0, state.count + (next ? 1 : -1));
     render();
     callApi({ action:'setShooting', userId:userId, eventId:state.eventId, going: next })
       .then(function(res){
+        busy = false;
         if (res && res.ok){ state.going = res.data.going; state.count = res.data.count; render(); }
         else { alert('保存に失敗：'+(res&&res.error)); refresh(); }
       })
-      .catch(function(e){ alert('保存に失敗：'+e); refresh(); });
+      .catch(function(e){ busy = false; alert('保存に失敗：'+e); refresh(); });
   }
 
   function refresh(){
