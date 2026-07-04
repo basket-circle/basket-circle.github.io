@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>個人練</title>
+<style>
+  body { font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif; margin:0; padding:16px; background:#f7f8fa; color:#333; }
+  h1 { font-size:20px; text-align:center; }
+  #loading { text-align:center; padding:56px 0; }
+  .ball { font-size:46px; line-height:1; animation:dribble .5s cubic-bezier(.3,0,.5,1) infinite alternate; }
+  @keyframes dribble { from{ transform:translateY(-24px) } to{ transform:translateY(0) } }
+  .shadow { width:34px; height:7px; margin:6px auto 0; background:rgba(0,0,0,.12); border-radius:50%; animation:sh .5s cubic-bezier(.3,0,.5,1) infinite alternate; }
+  @keyframes sh { from{ transform:scaleX(.55); opacity:.35 } to{ transform:scaleX(1); opacity:.65 } }
+  .loadmsg { margin-top:14px; font-size:14px; color:#888; }
+  .card { background:#fff; border-radius:12px; padding:18px; margin:0 auto 14px; max-width:460px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  .intro { font-size:13px; line-height:1.7; color:#555; }
+  .headline { font-size:16px; font-weight:bold; line-height:1.6; }
+  .count { font-size:15px; font-weight:bold; color:#1a73e8; margin:12px 0 4px; text-align:center; }
+  .go-btn { width:100%; box-sizing:border-box; padding:14px; font-size:16px; font-weight:bold; border:2px solid #f0a020; border-radius:10px; background:#fff; color:#c77800; margin-top:6px; }
+  .go-btn.on { background:#f0a020; color:#fff; border-color:#f0a020; }
+  .rest { font-size:15px; font-weight:bold; line-height:1.6; color:#555; }
+  .note { font-size:12px; color:#999; line-height:1.6; margin-top:12px; }
+</style>
+</head>
+<body>
+  <div id="loading">
+    <div class="ball">🏀</div>
+    <div class="shadow"></div>
+    <div class="loadmsg">読み込み中…</div>
+  </div>
+
+  <div id="container" style="display:none;">
+    <h1>🏀 個人練</h1>
+
+    <div class="card">
+      <div class="intro">
+        自分のペースでシューティング（シュート練習）ができる時間です🎯<br>
+        手ぶらでOK・途中参加や途中退出も自由。通常活動と同じ日・同じ体育館の
+        <b>となりのコート</b>で開催します。
+      </div>
+    </div>
+
+    <div id="status" class="card"><!-- JSで差し替え --></div>
+
+    <div class="note">
+      ※通常活動が中止のときは、こちらもお休みです。<br>
+      ※「行く」は目安の集計用です。当日の気分での参加・不参加も大歓迎🙆
+    </div>
+  </div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  // ⚠️ 新規に発行するシューティング用LIFFのIDに差し替えること
+  const LIFF_ID = "PUT-SHOOTING-LIFF-ID-HERE";
+  const API = "https://script.google.com/macros/s/AKfycbziHmBXwwFiH6cTbouTHRNLhORzMO629xUBwi0jGIjX9TsJC0iPuse1KAF7r-UDPDnT/exec";
+  let userId = null;
+  let state = null;              // getShooting の返り値
+  const loadingEl = document.getElementById('loading');
+
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+
+  let cbSeq = 0;
+  function callApi(params){
+    return new Promise(function(resolve, reject){
+      const cbName = 'jcb_' + (cbSeq++);
+      let s;
+      const to = setTimeout(function(){ cleanup(); reject('タイムアウト'); }, 15000);
+      function cleanup(){ try{ delete window[cbName]; }catch(e){} if(s&&s.parentNode) s.parentNode.removeChild(s); clearTimeout(to); }
+      window[cbName] = function(res){ cleanup(); resolve(res); };
+      params.callback = cbName;
+      const qs = Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+      s = document.createElement('script');
+      s.src = API + '?' + qs;
+      s.onerror = function(){ cleanup(); reject('通信エラー'); };
+      document.body.appendChild(s);
+    });
+  }
+
+  function render(){
+    const el = document.getElementById('status');
+    if (!state || !state.available){
+      if (state && state.reason === 'other'){
+        el.innerHTML =
+          '<div class="rest">'+escapeHtml(state.date)+' は【'+escapeHtml(state.kind)+'】のため、'+
+          '<br>シューティング個人練は<b>お休み</b>です🙏<br>'+
+          '<span style="font-weight:normal;font-size:13px;color:#888;">（となりのコートが使えません）</span></div>';
+      } else {
+        el.innerHTML = '<div class="rest">次回の活動はまだ未定です。<br>決まったらまたのぞいてみてください😊</div>';
+      }
+      return;
+    }
+    const going = !!state.going;
+    el.innerHTML =
+      '<div class="headline">'+escapeHtml(state.date)+' は、<br>となりのコートでシューティング個人練ができます🎯</div>'+
+      '<div class="count">今週 '+state.count+'人が行く予定</div>'+
+      '<button id="goBtn" class="go-btn'+(going?' on':'')+'">'+(going?'✓ 行く予定（取り消す）':'今週 行く')+'</button>';
+    document.getElementById('goBtn').addEventListener('click', toggleGo);
+  }
+
+  function toggleGo(){
+    if (!state || !state.available) return;
+    const next = !state.going;
+    // 楽観的更新
+    state.going = next;
+    state.count = Math.max(0, state.count + (next ? 1 : -1));
+    render();
+    callApi({ action:'setShooting', userId:userId, eventId:state.eventId, going: next })
+      .then(function(res){
+        if (res && res.ok){ state.going = res.data.going; state.count = res.data.count; render(); }
+        else { alert('保存に失敗：'+(res&&res.error)); refresh(); }
+      })
+      .catch(function(e){ alert('保存に失敗：'+e); refresh(); });
+  }
+
+  function refresh(){
+    return callApi({ action:'getShooting', userId:userId }).then(function(res){
+      if (res && res.ok){ state = res.data; render(); }
+    });
+  }
+
+  async function main(){
+    try {
+      await liff.init({ liffId: LIFF_ID });
+      if(!liff.isLoggedIn()){ liff.login(); return; }
+      const profile = await liff.getProfile();
+      userId = profile.userId;
+      const res = await callApi({ action:'getShooting', userId:userId }).catch(function(){ return null; });
+      if (res && res.ok){ state = res.data; }
+      render();
+      loadingEl.style.display='none';
+      document.getElementById('container').style.display='block';
+    } catch(err){ loadingEl.textContent = '初期化エラー：' + err; }
+  }
+  main();
+</script>
+</body>
+</html>
