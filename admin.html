@@ -206,26 +206,44 @@
   });
 
   const KIND_PILL = { '練習試合':'background:#ffecec;color:#c33;', 'イベント':'background:#fff4e0;color:#b80;', 'お休み':'background:#eee;color:#999;' };
+  function todayIso(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  // 今日以降の活動だけに絞る（日付なしの行は残す）
+  function upcomingEvents(evs){ const t=todayIso(); return evs.filter(function(ev){ return !ev.dateIso || ev.dateIso >= t; }); }
+  function eventCardHtml(ev){
+    const kp = KIND_PILL[ev.kind] || 'background:#eef;color:#446;';
+    const pub = ev.isPublic ? '<span class="pill pub">公開中</span>' : '<span class="pill draft">下書き</span>';
+    const venue = ev.venue || '打出中学校体育館';
+    return '<div class="card">'+
+      '<div class="row-top"><span class="ev-date">'+escapeHtml(ev.dateLabel||ev.dateIso)+'</span>'+
+        '<span><span class="pill" style="'+kp+'">'+escapeHtml(ev.kind)+'</span> '+pub+'</span></div>'+
+      (ev.name?'<div class="sub" style="color:#1a73e8;font-weight:bold;">'+escapeHtml(ev.name)+'</div>':'')+
+      '<div class="sub">'+escapeHtml(ev.start+'〜'+ev.end)+'　'+escapeHtml(venue)+'　開催ライン'+ev.line+'</div>'+
+      '<button class="act" data-edit="'+escapeHtml(ev.eventId)+'">編集</button>'+
+      '<button class="act gray" data-pub="'+escapeHtml(ev.eventId)+'" data-val="'+(ev.isPublic?'false':'true')+'">'+(ev.isPublic?'非公開にする':'公開する')+'</button>'+
+      '<button class="act danger" data-del="'+escapeHtml(ev.eventId)+'">削除</button>'+
+    '</div>';
+  }
   function loadEvents(){
     el('eventList').innerHTML = '<div class="empty">読み込み中…</div>';
     callApi({ action:'adminGetEvents', userId:userId }).then(function(res){
       if(!res||!res.ok){ el('eventList').innerHTML='<div class="empty">取得に失敗：'+(res&&res.error)+'</div>'; return; }
       const evs = res.data; window._events = evs;
       if(!evs.length){ el('eventList').innerHTML='<div class="empty">活動日がありません。「＋活動日を追加」か「日曜を一括生成」で作成してください。</div>'; return; }
-      el('eventList').innerHTML = evs.map(function(ev){
-        const kp = KIND_PILL[ev.kind] || 'background:#eef;color:#446;';
-        const pub = ev.isPublic ? '<span class="pill pub">公開中</span>' : '<span class="pill draft">下書き</span>';
-        const venue = ev.venue || '打出中学校体育館';
-        return '<div class="card">'+
-          '<div class="row-top"><span class="ev-date">'+escapeHtml(ev.dateLabel||ev.dateIso)+'</span>'+
-            '<span><span class="pill" style="'+kp+'">'+escapeHtml(ev.kind)+'</span> '+pub+'</span></div>'+
-          (ev.name?'<div class="sub" style="color:#1a73e8;font-weight:bold;">'+escapeHtml(ev.name)+'</div>':'')+
-          '<div class="sub">'+escapeHtml(ev.start+'〜'+ev.end)+'　'+escapeHtml(venue)+'　開催ライン'+ev.line+'</div>'+
-          '<button class="act" data-edit="'+escapeHtml(ev.eventId)+'">編集</button>'+
-          '<button class="act gray" data-pub="'+escapeHtml(ev.eventId)+'" data-val="'+(ev.isPublic?'false':'true')+'">'+(ev.isPublic?'非公開にする':'公開する')+'</button>'+
-          '<button class="act danger" data-del="'+escapeHtml(ev.eventId)+'">削除</button>'+
-        '</div>';
-      }).join('');
+      const today = todayIso();
+      const past = evs.filter(function(ev){ return ev.dateIso && ev.dateIso < today; });
+      const upcoming = evs.filter(function(ev){ return !ev.dateIso || ev.dateIso >= today; });
+      let html = upcoming.length ? upcoming.map(eventCardHtml).join('') : '<div class="empty">今日以降の活動はありません。</div>';
+      if(past.length){
+        html += '<button class="act gray" id="btnTogglePast" style="margin-top:6px;">過去の活動を表示（'+past.length+'）</button>'+
+                '<div id="pastEvents" style="display:none;margin-top:10px;">'+past.map(eventCardHtml).join('')+'</div>';
+      }
+      el('eventList').innerHTML = html;
+      const tp = el('btnTogglePast');
+      if(tp){ tp.addEventListener('click', function(){
+        const p = el('pastEvents'); const show = (p.style.display==='none');
+        p.style.display = show ? 'block' : 'none';
+        tp.textContent = (show?'過去の活動を隠す（':'過去の活動を表示（')+past.length+'）';
+      }); }
       el('eventList').querySelectorAll('[data-edit]').forEach(function(b){
         b.addEventListener('click', function(){ openEventForm(b.getAttribute('data-edit')); });
       });
@@ -388,7 +406,7 @@
   });
 
   function loadContactTab(){
-    callApi({ action:'adminGetEvents', userId:userId }).then(function(res){ if(res&&res.ok) fillEventOptions('contactEventSel', res.data); });
+    callApi({ action:'adminGetEvents', userId:userId }).then(function(res){ if(res&&res.ok) fillEventOptions('contactEventSel', upcomingEvents(res.data)); });  // 連絡は今日以降のみ（過去は不要）
     loadSettings();
   }
   el('btnSendCard').addEventListener('click', function(){
