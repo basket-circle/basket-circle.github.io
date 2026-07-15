@@ -357,7 +357,7 @@
   }
   function loadMembersTab(){
     callApi({ action:'adminGetEvents', userId:userId }).then(function(res){
-      if(res&&res.ok){ fillEventOptions('attEventSel', res.data); fillEventOptions('proxyEventSel', res.data); }
+      if(res&&res.ok){ const up=upcomingEvents(res.data); fillEventOptions('attEventSel', up); fillEventOptions('proxyEventSel', up); }  // 出欠確認・代理変更とも今日以降のみ
     });
     callApi({ action:'adminGetMembers', userId:userId }).then(function(res){
       if(res&&res.ok){
