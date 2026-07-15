@@ -419,10 +419,10 @@
   });
   el('btnCancelNotice').addEventListener('click', function(){
     const ev=el('contactEventSel').value; if(!ev){ alert('活動を選んでください'); return; }
-    if(!confirm('この活動の【中止のお知らせ】を全員に送信しますか？')) return;
+    if(!confirm('この活動の【中止のお知らせ】を全員に送信し、あわせて活動を非公開にします。よろしいですか？')) return;
     const btn=this; btn.disabled=true;
     callApi({ action:'adminCancelNotice', userId:userId, eventId:ev })
-      .then(function(r){ btn.disabled=false; el('contactMsg').textContent = (r&&r.ok)?'中止通知を送信しました⚠️':'失敗：'+(r&&r.error); })
+      .then(function(r){ btn.disabled=false; el('contactMsg').textContent = (r&&r.ok)?'中止通知を送信し、非公開にしました⚠️':'失敗：'+(r&&r.error); })
       .catch(function(e){ btn.disabled=false; el('contactMsg').textContent='失敗：'+e; });
   });
 
