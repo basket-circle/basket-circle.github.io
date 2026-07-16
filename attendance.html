@@ -172,7 +172,7 @@
       const canShoot = ev.kind === '通常活動' || ev.kind === 'イベント';   // 自由練習は通常活動・イベントの日（隣のコートが使える）
       const joinBody = ev.join.length ? ev.join.map(personHtml).join('') : '<span style="color:#aaa">まだいません</span>';
       const shootingHtml = (canShoot && ev.shooting && ev.shooting.length)
-        ? '<div class="roster"><span class="label">🏀 隣のコートの自由練習('+ev.shooting.length+')</span> <span style="font-size:11px;color:#aaa;">※上の名簿とは別集計（隣のコート）</span><br>'+ev.shooting.map(personHtml).join('')+'</div>'
+        ? '<div class="roster"><span class="label">🏀 隣のコートの自由練習('+ev.shooting.length+')</span> <span style="font-size:11px;color:#aaa;">※別集計</span><br>'+ev.shooting.map(personHtml).join('')+'</div>'
         : '';
       const div = document.createElement('div');
       div.className = 'event';
