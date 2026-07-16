@@ -33,6 +33,7 @@
   .btns button.on-join { border-color:#06c755; background:#06c755; color:#fff; }
   .btns button.on-undecided { border-color:#f0a020; background:#f0a020; color:#fff; }
   .btns button.on-absent { border-color:#999; background:#999; color:#fff; }
+  .btns button.on-shooting { border-color:#e08600; background:#e08600; color:#fff; }
   .mystat { font-size:12px; color:#888; margin-top:6px; text-align:right; }
   #empty { text-align:center; color:#888; padding:30px; }
     .tagpill{display:inline-block;color:#fff;font-size:11px;font-weight:bold;padding:1px 7px;border-radius:9px;margin-right:5px;}
@@ -168,12 +169,9 @@
       const lineMsg = (remain>0) ? ('あと'+remain+'人で開催ライン') : '<span class="line-ok">開催ライン到達！</span>';
       const nameLine = ev.eventName ? '<div style="font-weight:bold;color:#1a73e8;margin-top:4px;">'+escapeHtml(ev.eventName)+'</div>' : '';
       const saving = !!savingEvents[ev.eventId];
-      // 両方参加（主活動◯参加 かつ 自由練習）は◯参加の名前一覧から外し🏀側にのみ表示。人数は不変。
-      const joinShown = ev.join.filter(function(p){ return !p.alsoShooting; });
-      const joinBoth = ev.joinCount - joinShown.length;
-      const joinNote = joinBoth>0 ? ' <span style="font-size:11px;color:#aaa;">※自由練習と兼ねる'+joinBoth+'名は🏀に表示</span>' : '';
-      const joinBody = joinShown.length ? joinShown.map(personHtml).join('') : (joinBoth>0 ? '' : '<span style="color:#aaa">まだいません</span>');
-      const shootingHtml = (ev.shooting && ev.shooting.length)
+      const isNormal = ev.kind === '通常活動';   // 自由練習は通常活動の日だけ（となりのコートが使える）
+      const joinBody = ev.join.length ? ev.join.map(personHtml).join('') : '<span style="color:#aaa">まだいません</span>';
+      const shootingHtml = (isNormal && ev.shooting && ev.shooting.length)
         ? '<div class="roster"><span class="label">🏀 となりのコートの自由練習('+ev.shooting.length+')</span> <span style="font-size:11px;color:#aaa;">※上の名簿とは別集計（別コート）</span><br>'+ev.shooting.map(personHtml).join('')+'</div>'
         : '';
       const div = document.createElement('div');
@@ -185,7 +183,7 @@
         '<div class="line-info">参加 '+ev.joinCount+' ／ 開催ライン '+ev.line+'　'+lineMsg+'</div>'+
         '<div class="bar-wrap"><div class="bar" style="width:'+pct+'%"></div></div>'+
         '<div class="breakdown">'+breakdownText(ev.join)+'</div>'+
-        '<div class="roster"><span class="label">◯参加('+ev.joinCount+')</span>'+joinNote+'<br>'+joinBody+'</div>'+
+        '<div class="roster"><span class="label">◯参加('+ev.joinCount+')</span><br>'+joinBody+'</div>'+
         '<div class="roster"><span class="label">△検討中('+ev.undecidedCount+')</span><br>'+(ev.undecided.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
         shootingHtml+
         '<button class="add-guest" data-ev="'+escapeHtml(ev.eventId)+'" data-label="'+escapeHtml(ev.date+' '+(ev.eventName||ev.kind))+'">＋ 体験者を追加</button>'+
@@ -194,6 +192,7 @@
           '<button data-st="検討中" class="'+(ev.myStatus==='検討中'?'on-undecided':'')+'"'+(saving?' disabled':'')+'>△検討中</button>'+
           '<button data-st="不参加" class="'+(ev.myStatus==='不参加'?'on-absent':'')+'"'+(saving?' disabled':'')+'>×不参加</button>'+
         '</div>'+
+        (isNormal ? '<div class="btns"'+(saving?' style="opacity:.55"':'')+'><button data-st="自由練習" class="'+(ev.myStatus==='自由練習'?'on-shooting':'')+'"'+(saving?' disabled':'')+'>🏀 自由練習（別コート）</button></div>' : '')+
         '<div class="mystat">あなたの回答：'+(ev.myStatus||'未回答')+'</div>';
       div.querySelectorAll('.btns button').forEach(function(b){
         b.addEventListener('click', function(){ setStatus(ev.eventId, b.getAttribute('data-st')); });
@@ -215,11 +214,14 @@
     if (ev){
       ev.join = ev.join.filter(function(p){ return !p.me; });
       ev.undecided = ev.undecided.filter(function(p){ return !p.me; });
-      const me = { displayName: myProfile.displayName, level: myProfile.level, category: myProfile.category, transport: myProfile.transport, me: true, alsoShooting: !!ev.myShooting };
+      ev.shooting = (ev.shooting||[]).filter(function(p){ return !p.me; });
+      const me = { displayName: myProfile.displayName, level: myProfile.level, category: myProfile.category, transport: myProfile.transport, me: true };
       if (status === '参加') ev.join.push(me);
       else if (status === '検討中') ev.undecided.push(me);
+      else if (status === '自由練習') ev.shooting.push(me);
       ev.joinCount = ev.join.length;
       ev.undecidedCount = ev.undecided.length;
+      ev.myShooting = (status === '自由練習');
       ev.myStatus = status;
       render(boardData);
     }
