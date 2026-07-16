@@ -63,6 +63,7 @@
          (isOff?'':'<div class="sub">'+escapeHtml(ev.time)+'　'+escapeHtml(ev.venue)+'</div>')+
          (isOff?'':'<div style="font-size:13px;margin-top:6px;"><b>◯参加('+ev.joinCount+')</b>　'+(ev.join.length?names(ev.join):'—')+'</div>')+
          (isOff?'':'<div style="font-size:13px;margin-top:3px;color:#555;"><b>△検討中('+ev.undecidedCount+')</b>　'+(ev.undecided.length?names(ev.undecided):'—')+'</div>')+
+         ((isOff||!ev.shooting||!ev.shooting.length)?'':'<div style="font-size:13px;margin-top:3px;color:#c60;"><b>🏀自由練習('+ev.shooting.length+')</b>　'+names(ev.shooting)+'</div>')+
        '</div>';
      wrap.appendChild(div);
    });
