@@ -169,10 +169,10 @@
       const lineMsg = (remain>0) ? ('あと'+remain+'人で開催ライン') : '<span class="line-ok">開催ライン到達！</span>';
       const nameLine = ev.eventName ? '<div style="font-weight:bold;color:#1a73e8;margin-top:4px;">'+escapeHtml(ev.eventName)+'</div>' : '';
       const saving = !!savingEvents[ev.eventId];
-      const isNormal = ev.kind === '通常活動';   // 自由練習は通常活動の日だけ（となりのコートが使える）
+      const isNormal = ev.kind === '通常活動';   // 自由練習は通常活動の日だけ（隣のコートが使える）
       const joinBody = ev.join.length ? ev.join.map(personHtml).join('') : '<span style="color:#aaa">まだいません</span>';
       const shootingHtml = (isNormal && ev.shooting && ev.shooting.length)
-        ? '<div class="roster"><span class="label">🏀 となりのコートの自由練習('+ev.shooting.length+')</span> <span style="font-size:11px;color:#aaa;">※上の名簿とは別集計（別コート）</span><br>'+ev.shooting.map(personHtml).join('')+'</div>'
+        ? '<div class="roster"><span class="label">🏀 隣のコートの自由練習('+ev.shooting.length+')</span> <span style="font-size:11px;color:#aaa;">※上の名簿とは別集計（隣のコート）</span><br>'+ev.shooting.map(personHtml).join('')+'</div>'
         : '';
       const div = document.createElement('div');
       div.className = 'event';
@@ -192,7 +192,7 @@
           '<button data-st="検討中" class="'+(ev.myStatus==='検討中'?'on-undecided':'')+'"'+(saving?' disabled':'')+'>△検討中</button>'+
           '<button data-st="不参加" class="'+(ev.myStatus==='不参加'?'on-absent':'')+'"'+(saving?' disabled':'')+'>×不参加</button>'+
         '</div>'+
-        (isNormal ? '<div class="btns"'+(saving?' style="opacity:.55"':'')+'><button data-st="自由練習" class="'+(ev.myStatus==='自由練習'?'on-shooting':'')+'"'+(saving?' disabled':'')+'>🏀 自由練習（別コート）</button></div>' : '')+
+        (isNormal ? '<div class="btns"'+(saving?' style="opacity:.55"':'')+'><button data-st="自由練習" class="'+(ev.myStatus==='自由練習'?'on-shooting':'')+'"'+(saving?' disabled':'')+'>🏀 自由練習（隣のコート）</button></div>' : '')+
         '<div class="mystat">あなたの回答：'+(ev.myStatus||'未回答')+'</div>';
       div.querySelectorAll('.btns button').forEach(function(b){
         b.addEventListener('click', function(){ setStatus(ev.eventId, b.getAttribute('data-st')); });
