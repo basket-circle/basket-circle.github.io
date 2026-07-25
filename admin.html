@@ -249,10 +249,10 @@
       });
       el('eventList').querySelectorAll('[data-pub]').forEach(function(b){
         b.addEventListener('click', function(){
-          b.disabled=true;
+          const orig=b.textContent; b.disabled=true; b.textContent='更新中…';
           callApi({ action:'adminSetPublish', userId:userId, eventId:b.getAttribute('data-pub'), isPublic:b.getAttribute('data-val') })
-            .then(function(r){ if(r&&r.ok) loadEvents(); else { alert('失敗：'+(r&&r.error)); b.disabled=false; } })
-            .catch(function(e){ alert('失敗：'+e); b.disabled=false; });
+            .then(function(r){ if(r&&r.ok) loadEvents(); else { alert('失敗：'+(r&&r.error)); b.disabled=false; b.textContent=orig; } })
+            .catch(function(e){ alert('失敗：'+e); b.disabled=false; b.textContent=orig; });
         });
       });
       el('eventList').querySelectorAll('[data-del]').forEach(function(b){
@@ -305,9 +305,10 @@
   el('btnGen').addEventListener('click', function(){
     const w = prompt('先の何週ぶんの日曜を生成しますか？（下書きで作成）', '8');
     if(w===null) return;
+    const btn=this; const orig=btn.textContent; btn.disabled=true; btn.textContent='生成中…';
     callApi({ action:'adminGenerateSundays', userId:userId, weeks:w })
-      .then(function(r){ if(r&&r.ok){ alert(r.data.added+'件の日曜を下書き生成しました。'); loadEvents(); } else { alert('失敗：'+(r&&r.error)); } })
-      .catch(function(e){ alert('失敗：'+e); });
+      .then(function(r){ btn.disabled=false; btn.textContent=orig; if(r&&r.ok){ alert(r.data.added+'件の日曜を下書き生成しました。'); loadEvents(); } else { alert('失敗：'+(r&&r.error)); } })
+      .catch(function(e){ btn.disabled=false; btn.textContent=orig; alert('失敗：'+e); });
   });
 
   function loadAdmins(){
@@ -327,9 +328,10 @@
       el('adminList').querySelectorAll('[data-rm]').forEach(function(b){
         b.addEventListener('click', function(){
           if(!confirm('この管理者を削除しますか？')) return;
+          b.disabled=true; b.textContent='削除中…';
           callApi({ action:'adminRemoveAdmin', userId:userId, targetUserId:b.getAttribute('data-rm') })
-            .then(function(r){ if(r&&r.ok) loadAdmins(); else alert('失敗：'+(r&&r.error)); })
-            .catch(function(e){ alert('失敗：'+e); });
+            .then(function(r){ if(r&&r.ok) loadAdmins(); else { alert('失敗：'+(r&&r.error)); b.disabled=false; b.textContent='削除'; } })
+            .catch(function(e){ alert('失敗：'+e); b.disabled=false; b.textContent='削除'; });
         });
       });
     }).catch(function(e){ el('adminList').innerHTML='<div class="empty">通信エラー：'+e+'</div>'; });
@@ -339,11 +341,13 @@
     const id = sel.value;
     if(!id){ alert('メンバーを選んでください'); return; }
     const name = sel.options[sel.selectedIndex].text;
+    const btn=this; btn.disabled=true; el('adminMsg').textContent='追加中…';
     callApi({ action:'adminAddAdmin', userId:userId, newUserId:id, name:name })
       .then(function(r){
+        btn.disabled=false;
         if(r&&r.ok){ el('adminMsg').textContent = r.data.added?'追加しました':(r.data.reason||'追加済み'); loadAdmins(); }
-        else alert('失敗：'+(r&&r.error));
-      }).catch(function(e){ alert('失敗：'+e); });
+        else { el('adminMsg').textContent=''; alert('失敗：'+(r&&r.error)); }
+      }).catch(function(e){ btn.disabled=false; el('adminMsg').textContent=''; alert('失敗：'+e); });
   });
 
   el('copyId').addEventListener('click', function(){ const b=this; try{ navigator.clipboard.writeText(userId); b.textContent='コピーしました'; }catch(e){ alert(userId); } });
@@ -386,7 +390,7 @@
   el('btnProxy').addEventListener('click', function(){
     const ev=el('proxyEventSel').value, mem=el('proxyMemberSel').value, st=el('proxyStatusSel').value;
     if(!ev||!mem){ alert('活動とメンバーを選んでください'); return; }
-    const btn=this; btn.disabled=true;
+    const btn=this; btn.disabled=true; el('proxyMsg').textContent='設定中…';
     callApi({ action:'adminSetAttendance', userId:userId, targetUserId:mem, eventId:ev, status:st })
       .then(function(r){ btn.disabled=false; if(r&&r.ok){ el('proxyMsg').textContent='設定しました：'+st; if(el('attEventSel').value===ev) el('attEventSel').dispatchEvent(new Event('change')); } else alert('失敗：'+(r&&r.error)); })
       .catch(function(e){ btn.disabled=false; alert('失敗：'+e); });
@@ -412,7 +416,7 @@
   el('btnSendCard').addEventListener('click', function(){
     const ev=el('contactEventSel').value; if(!ev){ alert('活動を選んでください'); return; }
     if(!confirm('この活動の出欠カードを全員に送信しますか？')) return;
-    const btn=this; btn.disabled=true;
+    const btn=this; btn.disabled=true; el('contactMsg').textContent='送信中…📨';
     callApi({ action:'adminSendCard', userId:userId, eventId:ev })
       .then(function(r){ btn.disabled=false; el('contactMsg').textContent = (r&&r.ok)?'カードを送信しました📨':'失敗：'+(r&&r.error); })
       .catch(function(e){ btn.disabled=false; el('contactMsg').textContent='失敗：'+e; });
@@ -420,7 +424,7 @@
   el('btnCancelNotice').addEventListener('click', function(){
     const ev=el('contactEventSel').value; if(!ev){ alert('活動を選んでください'); return; }
     if(!confirm('この活動の【中止のお知らせ】を全員に送信し、あわせて活動を非公開にします。よろしいですか？')) return;
-    const btn=this; btn.disabled=true;
+    const btn=this; btn.disabled=true; el('contactMsg').textContent='送信中…';
     callApi({ action:'adminCancelNotice', userId:userId, eventId:ev })
       .then(function(r){ btn.disabled=false; el('contactMsg').textContent = (r&&r.ok)?'中止通知を送信し、非公開にしました⚠️':'失敗：'+(r&&r.error); })
       .catch(function(e){ btn.disabled=false; el('contactMsg').textContent='失敗：'+e; });
