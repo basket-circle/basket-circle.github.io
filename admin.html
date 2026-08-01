@@ -63,6 +63,7 @@
       <button data-tab="events" class="active">📅 活動日</button>
       <button data-tab="members">👥 メンバー</button>
       <button data-tab="contact">📣 連絡</button>
+      <button data-tab="docs">📄 書類</button>
       <button data-tab="admins">🔑 管理者</button>
     </div>
 
@@ -123,6 +124,44 @@
         <label class="chk"><input type="checkbox" id="awayToggle"> 不在中にする</label>
         <div class="mini" style="margin-top:6px;">ONの間、公式LINEアカウント宛に届いたメッセージに「管理者不在＋チャットへ」を自動返信します。OFFのときは自動返信しません（公式LINEアカウントから、管理者が手動で応答）。</div>
         <div class="msg" id="awayMsg"></div>
+      </div>
+    </div>
+
+    <div id="pane-docs" class="pane">
+      <div class="card">
+        <label class="f">書類の種類</label>
+        <select id="docKind">
+          <option value="usage">学校施設使用報告書（使った月の実績）</option>
+          <option value="plan" disabled>学校施設使用予定表（準備中）</option>
+        </select>
+        <label class="f">対象月</label>
+        <input type="month" id="docMonth">
+        <label class="f">提出日</label>
+        <input type="date" id="docSubmit">
+        <button class="act solid" id="btnDocLoad" style="margin-top:12px;">対象の使用日を読み込む</button>
+        <div class="msg" id="docLoadMsg"></div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:bold;margin-bottom:6px;">許可の情報</div>
+        <label class="f">許可番号</label>
+        <input type="text" id="docPermitNo" inputmode="numeric" placeholder="69">
+        <label class="f">許可年月日</label>
+        <input type="date" id="docPermitDate">
+        <div class="mini" style="margin-top:6px;">※いつもの内容が入っています。年度が替わったときだけ変えてください（出力時に保存され、次回も引き継がれます）。</div>
+      </div>
+
+      <div class="card" id="docDaysCard" style="display:none;">
+        <div style="font-weight:bold;margin-bottom:6px;">使用日と扇風機の台数</div>
+        <div id="docDays"></div>
+        <div class="mini" id="docSkipped" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="card" id="docOutCard" style="display:none;">
+        <button class="act solid" id="btnDocMake">📄 PDFを出力</button>
+        <div class="msg" id="docOutMsg"></div>
+        <div id="docOutLink" style="margin-top:10px;"></div>
+        <div class="mini" style="margin-top:8px;">※Drive の「体育館_書類」に保存されます。同じ月をもう一度出すと、前の分はゴミ箱に移ります。</div>
       </div>
     </div>
 
@@ -202,6 +241,7 @@
       if(b.getAttribute('data-tab')==='admins') loadAdmins();
       if(b.getAttribute('data-tab')==='members') loadMembersTab();
       if(b.getAttribute('data-tab')==='contact') loadContactTab();
+      if(b.getAttribute('data-tab')==='docs') loadDocsTab();
     });
   });
 
@@ -457,6 +497,222 @@
     callApi({ action:'adminBroadcast', userId:userId, text:text })
       .then(function(r){ btn.disabled=false; if(r&&r.ok){ el('bcMsg').textContent='全友だちに送信しました📨'; el('bcText').value=''; } else el('bcMsg').textContent='失敗：'+(r&&r.error); })
       .catch(function(e){ btn.disabled=false; el('bcMsg').textContent='失敗：'+e; });
+  });
+
+  // ===== 📄書類（自治体提出書類の作成）=====
+  // 記入座標は公式様式のベースPDFをPCで採寸した結果。ベースPDFを作り直したときだけ差し替える。
+  const USAGE_REPORT_LAYOUT = {"形式":"学校施設使用報告書（照明・空調）","採寸元":"UsageReport_base.pdf","ページ寸法":[0,0,595.32,841.92],"提出日":{"y":782.04,"size":9.12,"年":{"x1":433.66,"x2":470.14},"月":{"x1":479.26,"x2":497.5},"日":{"x1":506.62,"x2":524.86}},"表題":{"y":653.26,"size":12.96,"月の右端":257.23},"許可":{"y":629.02,"size":9.12,"年の右端":94.94,"月の右端":122.33,"日の右端":149.69,"番号":{"x1":204.41,"x2":250.03}},"行":[{"日付":{"スラッシュx":79.82,"スラッシュ幅":3.6,"y":508.03,"size":7.2},"体育館":{"x1":161.66,"x2":185.06,"y":520.63,"size":7.8},"使用時間":{"y":507.67,"size":7.8,"開始時":{"x1":211.25,"x2":229.53},"開始分":{"x1":237.36,"x2":252.96},"終了時":{"x1":276.36,"x2":299.76},"終了分":{"x1":307.56,"x2":323.16}},"照明あり":{"x1":336.91,"x2":352.51,"y":520.27,"size":7.8},"空調なし":{"x1":360.31,"x2":375.91,"y":494.11,"size":7.8},"照明時間":{"y":520.63,"size":7.2,"時の右端":397.54,"分":{"x1":411.94,"x2":433.5}},"備考":{"y":521.11,"size":5.88,"台数":{"x1":501.96,"x2":509.68},"x1":484.32,"x2":527.29}},{"日付":{"スラッシュx":79.82,"スラッシュ幅":3.6,"y":455.71,"size":7.2},"体育館":{"x1":161.66,"x2":185.06,"y":468.31,"size":7.8},"使用時間":{"y":455.35,"size":7.8,"開始時":{"x1":211.25,"x2":229.53},"開始分":{"x1":237.36,"x2":252.96},"終了時":{"x1":276.36,"x2":299.76},"終了分":{"x1":307.56,"x2":323.16}},"照明あり":{"x1":336.91,"x2":352.51,"y":467.95,"size":7.8},"空調なし":{"x1":360.31,"x2":375.91,"y":441.79,"size":7.8},"照明時間":{"y":468.31,"size":7.2,"時の右端":397.54,"分":{"x1":411.94,"x2":433.5}},"備考":{"y":468.79,"size":5.88,"台数":{"x1":501.96,"x2":509.68},"x1":484.32,"x2":527.29}},{"日付":{"スラッシュx":79.82,"スラッシュ幅":3.6,"y":403.37,"size":7.2},"体育館":{"x1":161.66,"x2":185.06,"y":415.99,"size":7.8},"使用時間":{"y":403.01,"size":7.8,"開始時":{"x1":211.25,"x2":229.53},"開始分":{"x1":237.36,"x2":252.96},"終了時":{"x1":276.36,"x2":299.76},"終了分":{"x1":307.56,"x2":323.16}},"照明あり":{"x1":336.91,"x2":352.51,"y":415.63,"size":7.8},"空調なし":{"x1":360.31,"x2":375.91,"y":389.45,"size":7.8},"照明時間":{"y":415.99,"size":7.2,"時の右端":397.54,"分":{"x1":411.94,"x2":433.5}},"備考":{"y":416.47,"size":5.88,"台数":{"x1":501.96,"x2":509.68},"x1":484.32,"x2":527.29}},{"日付":{"スラッシュx":79.82,"スラッシュ幅":3.6,"y":351.05,"size":7.2},"体育館":{"x1":161.66,"x2":185.06,"y":363.65,"size":7.8},"使用時間":{"y":350.69,"size":7.8,"開始時":{"x1":211.25,"x2":229.53},"開始分":{"x1":237.36,"x2":252.96},"終了時":{"x1":276.36,"x2":299.76},"終了分":{"x1":307.56,"x2":323.16}},"照明あり":{"x1":336.91,"x2":352.51,"y":363.29,"size":7.8},"空調なし":{"x1":360.31,"x2":375.91,"y":337.13,"size":7.8},"照明時間":{"y":363.65,"size":7.2,"時の右端":397.54,"分":{"x1":411.94,"x2":433.5}},"備考":{"y":364.13,"size":5.88,"台数":{"x1":501.96,"x2":509.68},"x1":484.32,"x2":527.29}},{"日付":{"スラッシュx":79.82,"スラッシュ幅":3.6,"y":298.73,"size":7.2},"体育館":{"x1":161.66,"x2":185.06,"y":311.33,"size":7.8},"使用時間":{"y":298.37,"size":7.8,"開始時":{"x1":211.25,"x2":229.53},"開始分":{"x1":237.36,"x2":252.96},"終了時":{"x1":276.36,"x2":299.76},"終了分":{"x1":307.56,"x2":323.16}},"照明あり":{"x1":336.91,"x2":352.51,"y":310.97,"size":7.8},"空調なし":{"x1":360.31,"x2":375.91,"y":284.81,"size":7.8},"照明時間":{"y":311.33,"size":7.2,"時の右端":397.54,"分":{"x1":411.94,"x2":433.5}},"備考":{"y":311.81,"size":5.88,"台数":{"x1":501.96,"x2":509.68},"x1":484.32,"x2":527.29}},{"日付":{"スラッシュx":79.82,"スラッシュ幅":3.6,"y":246.41,"size":7.2},"体育館":{"x1":161.66,"x2":185.06,"y":259.01,"size":7.8},"使用時間":{"y":246.05,"size":7.8,"開始時":{"x1":211.25,"x2":229.53},"開始分":{"x1":237.36,"x2":252.96},"終了時":{"x1":276.36,"x2":299.76},"終了分":{"x1":307.56,"x2":323.16}},"照明あり":{"x1":336.91,"x2":352.51,"y":258.65,"size":7.8},"空調なし":{"x1":360.31,"x2":375.91,"y":232.46,"size":7.8},"照明時間":{"y":259.01,"size":7.2,"時の右端":397.54,"分":{"x1":411.94,"x2":433.5}},"備考":{"y":259.49,"size":5.88,"台数":{"x1":501.96,"x2":509.68},"x1":484.32,"x2":527.29}},{"日付":{"スラッシュx":79.82,"スラッシュ幅":3.6,"y":194.06,"size":7.2},"体育館":{"x1":161.66,"x2":185.06,"y":206.66,"size":7.8},"使用時間":{"y":193.7,"size":7.8,"開始時":{"x1":211.25,"x2":229.53},"開始分":{"x1":237.36,"x2":252.96},"終了時":{"x1":276.36,"x2":299.76},"終了分":{"x1":307.56,"x2":323.16}},"照明あり":{"x1":336.91,"x2":352.51,"y":206.3,"size":7.8},"空調なし":{"x1":360.31,"x2":375.91,"y":180.14,"size":7.8},"照明時間":{"y":206.66,"size":7.2,"時の右端":397.54,"分":{"x1":411.94,"x2":433.5}},"備考":{"y":207.14,"size":5.88,"台数":{"x1":501.96,"x2":509.68},"x1":484.32,"x2":527.29}}]};
+
+  // 記入処理。書き込むのは半角数字・丸・白塗りだけなので日本語フォントは不要。
+  // ※原本は forms/browser/draw.js（PCで検証済み）。直すときは両方そろえる。
+  async function drawUsageReport(PDFLib, baseBytes, data, layout) {
+    const PAD = 0.6;
+    function ymd(s){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s)); if(!m) throw new Error('日付の形式が不正です: '+s); return {y:+m[1],m:+m[2],d:+m[3]}; }
+    function hm(s){ const m=/^(\d{1,2}):(\d{2})$/.exec(String(s)); if(!m) throw new Error('時刻の形式が不正です: '+s); return {h:+m[1],m:+m[2]}; }
+
+    const pdf = await PDFLib.PDFDocument.load(baseBytes);
+    const page = pdf.getPages()[0];
+    const font = await pdf.embedFont(PDFLib.StandardFonts.Helvetica);
+    const INK = PDFLib.rgb(0,0,0), PAPER = PDFLib.rgb(1,1,1);
+
+    function width(t,size){ return font.widthOfTextAtSize(t,size); }
+    function right(t,size,xRight,y){ page.drawText(t,{x:xRight-PAD-width(t,size),y:y,size:size,font:font,color:INK}); }
+    function left(t,size,xLeft,y){ page.drawText(t,{x:xLeft+PAD,y:y,size:size,font:font,color:INK}); }
+    function center(t,size,gap,y){ page.drawText(t,{x:(gap.x1+gap.x2)/2-width(t,size)/2,y:y,size:size,font:font,color:INK}); }
+    function circle(span){
+      page.drawEllipse({ x:(span.x1+span.x2)/2, y:span.y+span.size*0.38,
+        xScale:(span.x2-span.x1)/2+1.8, yScale:span.size*0.62, borderColor:INK, borderWidth:0.7 });
+    }
+    function erase(note){
+      page.drawRectangle({ x:note.x1-0.5, y:note.y-1.4, width:note.x2-note.x1+1, height:note.size*1.25, color:PAPER });
+    }
+
+    const sd = ymd(data.submitDate), S = layout['提出日'];
+    right(String(sd.y), S.size*0.9, S['年'].x2, S.y);
+    right(String(sd.m), S.size*0.9, S['月'].x2, S.y);
+    right(String(sd.d), S.size*0.9, S['日'].x2, S.y);
+
+    const rm = /^(\d{4})-(\d{2})$/.exec(String(data.reportMonth));
+    if(!rm) throw new Error('報告月の形式が不正です: '+data.reportMonth);
+    const T = layout['表題'];
+    right(String(+rm[2]), T.size*0.85, T['月の右端'], T.y);
+
+    const pdt = ymd(data.permitDate), P = layout['許可'];
+    right(String(pdt.y), P.size*0.9, P['年の右端'], P.y);
+    right(String(pdt.m), P.size*0.9, P['月の右端'], P.y);
+    right(String(pdt.d), P.size*0.9, P['日の右端'], P.y);
+    center(String(data.permitNumber), P.size*0.9, P['番号'], P.y);
+
+    const rows = layout['行'];
+    if(data.days.length > rows.length) throw new Error('使用日が'+data.days.length+'日ありますが、様式の枠は'+rows.length+'日分です');
+    data.days.forEach(function(day,i){
+      const R = rows[i], d = ymd(day.date), s = hm(day.start), e = hm(day.end);
+      const T2 = R['使用時間'], digit = T2.size*0.95;
+      right(String(d.m), R['日付'].size, R['日付']['スラッシュx'], R['日付'].y);
+      left(String(d.d), R['日付'].size, R['日付']['スラッシュx']+R['日付']['スラッシュ幅'], R['日付'].y);
+      circle(R['体育館']);
+      right(String(s.h), digit, T2['開始時'].x2, T2.y);
+      right(('0'+s.m).slice(-2), digit, T2['開始分'].x2, T2.y);
+      right(String(e.h), digit, T2['終了時'].x2, T2.y);
+      right(('0'+e.m).slice(-2), digit, T2['終了分'].x2, T2.y);
+      circle(R['照明あり']);
+      circle(R['空調なし']);
+      const mins = (e.h*60+e.m)-(s.h*60+s.m);
+      if(mins<=0) throw new Error(day.date+' の終了時刻が開始時刻以前です');
+      const LH = R['照明時間'];
+      right(String(Math.floor(mins/60)), LH.size, LH['時の右端'], LH.y);
+      right(String(mins%60), LH.size, LH['分'].x2, LH.y);
+      const N = R['備考'];
+      if(Number(day.fans)>0) right(String(Number(day.fans)), N.size, N['台数'].x2, N.y);
+      else erase(N);
+    });
+    for(let i=data.days.length;i<rows.length;i++) erase(rows[i]['備考']);
+
+    return await pdf.save();
+  }
+
+  let pdfLibPromise = null;
+  function loadPdfLib(){
+    if(window.PDFLib) return Promise.resolve(window.PDFLib);
+    if(!pdfLibPromise){
+      pdfLibPromise = new Promise(function(resolve,reject){
+        const s = document.createElement('script');
+        s.src = 'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+        s.onload = function(){ resolve(window.PDFLib); };
+        s.onerror = function(){ pdfLibPromise=null; reject('PDF部品の読み込みに失敗しました（通信環境をご確認ください）'); };
+        document.body.appendChild(s);
+      });
+    }
+    return pdfLibPromise;
+  }
+
+  function b64ToBytes(b64){
+    const bin = atob(b64), out = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function bytesToB64(bytes){
+    let bin = '';
+    const CH = 0x8000;
+    for(let i=0;i<bytes.length;i+=CH) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+CH));
+    return btoa(bin);
+  }
+  // PDFはGETでは送れないのでPOSTで送る。応答が読めない環境もあるため、
+  // 保存できたかどうかは adminGetDocLink で確認する。
+  function postApi(payload){
+    return fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) })
+      .then(function(r){ return r.json(); })
+      .catch(function(){ return null; });
+  }
+  function waitDocLink(docId){
+    let tries = 0;
+    return new Promise(function(resolve, reject){
+      (function poll(){
+        tries++;
+        callApi({ action:'adminGetDocLink', userId:userId, docId:docId })
+          .then(function(r){
+            if(r && r.ok && r.data && r.data.ready) return resolve(r.data);
+            if(tries >= 12) return reject('保存の確認が取れませんでした。Drive の「体育館_書類」を直接ご確認ください。');
+            setTimeout(poll, 1500);
+          })
+          .catch(function(){ if(tries>=12) reject('通信エラー'); else setTimeout(poll, 1500); });
+      })();
+    });
+  }
+
+  function isoToday(){ return todayIso(); }
+  function prevMonthYm(){
+    const d = new Date();
+    d.setDate(1); d.setMonth(d.getMonth()-1);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  }
+
+  let docDays = [];
+  function loadDocsTab(){
+    if(!el('docMonth').value) el('docMonth').value = prevMonthYm();
+    if(!el('docSubmit').value) el('docSubmit').value = isoToday();
+    callApi({ action:'adminGetDocSettings', userId:userId }).then(function(r){
+      if(r && r.ok){
+        if(r.data.permitNumber && !el('docPermitNo').value) el('docPermitNo').value = r.data.permitNumber;
+        if(r.data.permitDate && !el('docPermitDate').value) el('docPermitDate').value = r.data.permitDate;
+      }
+    });
+  }
+
+  el('btnDocLoad').addEventListener('click', function(){
+    const ym = el('docMonth').value;
+    if(!ym){ alert('対象月を選んでください'); return; }
+    const btn = this; btn.disabled = true;
+    el('docLoadMsg').textContent = '読み込み中…';
+    el('docDaysCard').style.display = 'none';
+    el('docOutCard').style.display = 'none';
+    callApi({ action:'adminGetUsageDays', userId:userId, ym:ym })
+      .then(function(r){
+        btn.disabled = false;
+        if(!r || !r.ok){ el('docLoadMsg').textContent = '失敗：'+(r&&r.error); return; }
+        docDays = r.data.days || [];
+        const skipped = r.data.skipped || [];
+        if(!docDays.length){
+          el('docLoadMsg').textContent = 'この月に対象の使用日がありません。';
+        } else if(docDays.length > 7){
+          el('docLoadMsg').textContent = docDays.length+'日あります。様式は7日分までなので、別紙が必要です⚠️';
+        } else {
+          el('docLoadMsg').textContent = docDays.length+'日みつかりました。';
+        }
+        el('docDays').innerHTML = docDays.map(function(d,i){
+          return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0;">'+
+            '<div style="flex:1;"><div style="font-weight:bold;font-size:14px;">'+escapeHtml(d.dateLabel||d.dateIso)+'</div>'+
+            '<div class="mini">'+escapeHtml(d.start)+'〜'+escapeHtml(d.end)+'　'+escapeHtml(d.kind)+'</div></div>'+
+            '<div style="width:88px;"><input type="number" id="fans-'+i+'" min="0" max="9" value="0" style="text-align:center;"></div>'+
+            '<div class="mini">台</div></div>';
+        }).join('');
+        el('docSkipped').innerHTML = skipped.length
+          ? '対象外：'+skipped.map(function(s){ return escapeHtml(s.dateIso)+'（'+escapeHtml(s.reason)+'）'; }).join('、')
+          : '';
+        el('docDaysCard').style.display = docDays.length ? 'block' : 'none';
+        el('docOutCard').style.display = docDays.length ? 'block' : 'none';
+      })
+      .catch(function(e){ btn.disabled=false; el('docLoadMsg').textContent='失敗：'+e; });
+  });
+
+  el('btnDocMake').addEventListener('click', async function(){
+    const btn = this;
+    const ym = el('docMonth').value, submit = el('docSubmit').value;
+    const no = el('docPermitNo').value.trim(), pdate = el('docPermitDate').value;
+    if(!ym || !submit || !no || !pdate){ alert('対象月・提出日・許可番号・許可年月日をすべて入れてください'); return; }
+    if(!docDays.length){ alert('対象の使用日がありません'); return; }
+    if(docDays.length > 7){ alert('様式は7日分までです。別紙での対応が必要です。'); return; }
+    const days = docDays.map(function(d,i){
+      return { date:d.dateIso, start:d.start, end:d.end, fans: Number(el('fans-'+i).value) || 0 };
+    });
+    btn.disabled = true; el('docOutLink').innerHTML = '';
+    try {
+      el('docOutMsg').textContent = '準備中…';
+      const PDFLib = await loadPdfLib();
+      const s = await callApi({ action:'adminSaveDocSettings', userId:userId, permitNumber:no, permitDate:pdate });
+      if(!s || !s.ok) throw (s && s.error) || '許可情報の保存に失敗しました';
+      el('docOutMsg').textContent = '様式を取得中…';
+      const b = await callApi({ action:'adminGetUsageBase', userId:userId });
+      if(!b || !b.ok) throw (b && b.error) || '様式の取得に失敗しました';
+      el('docOutMsg').textContent = '記入中…';
+      const bytes = await drawUsageReport(PDFLib, b64ToBytes(b.data.base64), {
+        submitDate: submit, reportMonth: ym, permitNumber: no, permitDate: pdate, days: days
+      }, USAGE_REPORT_LAYOUT);
+      el('docOutMsg').textContent = '保存中…';
+      const name = '使用報告書_'+ym.slice(0,4)+'年'+Number(ym.slice(5,7))+'月分.pdf';
+      const docId = String(Date.now());
+      await postApi({ action:'adminSaveDoc', userId:userId, docId:docId, name:name, base64:bytesToB64(bytes) });
+      const link = await waitDocLink(docId);
+      el('docOutMsg').textContent = 'できました📄';
+      el('docOutLink').innerHTML = '<button class="act solid" id="btnDocOpen">PDFを開く（'+escapeHtml(link.name)+'）</button>';
+      el('btnDocOpen').addEventListener('click', function(){
+        try { liff.openWindow({ url: link.url, external: true }); }
+        catch(e){ window.open(link.url, '_blank'); }
+      });
+    } catch(e){
+      el('docOutMsg').textContent = '失敗：'+e;
+    }
+    btn.disabled = false;
   });
 
   async function main(){
