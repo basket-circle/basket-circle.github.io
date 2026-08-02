@@ -7,8 +7,11 @@
 <style>
   body { font-family:-apple-system,"Hiragino Kaku Gothic ProN",sans-serif; margin:0; padding:0; background:#f7f8fa; color:#333; }
   #loading { text-align:center; padding:56px 0; color:#888; }
-  .ball { font-size:42px; animation:dribble .5s cubic-bezier(.3,0,.5,1) infinite alternate; }
-  @keyframes dribble { from{ transform:translateY(-20px) } to{ transform:translateY(0) } }
+  .ball { font-size:46px; line-height:1; animation:dribble .5s cubic-bezier(.3,0,.5,1) infinite alternate; }
+  @keyframes dribble { from{ transform:translateY(-24px) } to{ transform:translateY(0) } }
+  .shadow { width:34px; height:7px; margin:6px auto 0; background:rgba(0,0,0,.12); border-radius:50%; animation:sh .5s cubic-bezier(.3,0,.5,1) infinite alternate; }
+  @keyframes sh { from{ transform:scaleX(.55); opacity:.35 } to{ transform:scaleX(1); opacity:.65 } }
+  .loadmsg { margin-top:14px; font-size:14px; color:#888; }
   header { background:#06c755; color:#fff; padding:12px 16px; font-weight:bold; font-size:16px; position:sticky; top:0; z-index:10; }
   .tabs { display:flex; background:#fff; border-bottom:1px solid #e0e0e0; position:sticky; top:44px; z-index:9; }
   .tabs button { flex:1; padding:10px 4px; border:none; background:#fff; font-size:12px; color:#666; border-bottom:3px solid transparent; }
@@ -46,7 +49,11 @@
 </style>
 </head>
 <body>
-  <div id="loading"><div class="ball">🏀</div><div style="margin-top:12px;font-size:14px;">読み込み中…</div></div>
+  <div id="loading">
+    <div class="ball">🏀</div>
+    <div class="shadow"></div>
+    <div class="loadmsg">読み込み中…</div>
+  </div>
 
   <div id="denied" style="display:none;">
     <h2>運営コンソール</h2>
@@ -131,8 +138,8 @@
       <div class="card">
         <label class="f">書類の種類</label>
         <select id="docKind">
-          <option value="usage">学校施設使用報告書（使った月の実績）</option>
-          <option value="plan">使用日程表（来月の使用予定・申請書に添付）</option>
+          <option value="usage">使用報告書</option>
+          <option value="plan">使用許可申請書（添付用）</option>
         </select>
         <label class="f">対象月</label>
         <input type="month" id="docMonth">
