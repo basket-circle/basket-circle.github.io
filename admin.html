@@ -205,7 +205,7 @@
         <option>通常活動</option><option>練習試合</option><option>イベント</option><option>お休み</option>
       </select>
       <label class="f">開催ライン（人数）</label>
-      <input type="number" id="evLine" value="4" min="0">
+      <input type="number" id="evLine" value="6" min="0">
       <label class="f">名称（任意・イベント名など）</label>
       <input type="text" id="evName" placeholder="例：新年会">
       <label class="chk"><input type="checkbox" id="evPublic"> 公開する（メンバーに表示）</label>
@@ -329,7 +329,7 @@
     el('evEnd').value = ev ? ev.end : '20:00';
     el('evVenue').value = ev ? ev.venue : '';
     el('evKind').value = ev ? ev.kind : '通常活動';
-    el('evLine').value = ev ? ev.line : 4;
+    el('evLine').value = ev ? ev.line : 6;
     el('evName').value = ev ? ev.name : '';
     el('evPublic').checked = ev ? ev.isPublic : false;
     el('eventModal').style.display='block';
