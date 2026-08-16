@@ -173,6 +173,12 @@
         <div id="docOutLink" style="margin-top:10px;"></div>
         <div class="mini" style="margin-top:8px;">※Drive の「体育館_書類」に保存されます。同じ月をもう一度出すと、前の分はゴミ箱に移ります。</div>
       </div>
+
+      <!-- フォルダのURLは公開リポジトリに書けないので、GAS（adminGetDocSettings）から受け取る -->
+      <div class="card" id="docFolderCard" style="display:none;">
+        <button class="act" id="btnDocFolder">📁 過去の書類を見る（Drive）</button>
+        <div class="mini" style="margin-top:8px;">※これまでに出力した使用報告書・使用日程表が入っています。</div>
+      </div>
     </div>
 
     <div id="pane-admins" class="pane">
@@ -736,6 +742,7 @@
   el('docKind').addEventListener('change', applyDocKind);
 
   let docDays = [], planDays = [];
+  let docFolderUrl = '';
   function loadDocsTab(){
     if(!el('docMonth').value) el('docMonth').value = defaultDocYm();
     if(!el('docSubmit').value) el('docSubmit').value = isoToday();
@@ -743,9 +750,19 @@
       if(r && r.ok){
         if(r.data.permitNumber && !el('docPermitNo').value) el('docPermitNo').value = r.data.permitNumber;
         if(r.data.permitDate && !el('docPermitDate').value) el('docPermitDate').value = r.data.permitDate;
+        docFolderUrl = r.data.folderUrl || '';
+        el('docFolderCard').style.display = docFolderUrl ? 'block' : 'none';
       }
     });
   }
+
+  // URLはタブを開いた時点で取得済み。押した瞬間に同期で開く（後から取りに行くと
+  // ポップアップブロックに引っかかる）。
+  el('btnDocFolder').addEventListener('click', function(){
+    if(!docFolderUrl) return;
+    try { liff.openWindow({ url: docFolderUrl, external: true }); }
+    catch(e){ window.open(docFolderUrl, '_blank'); }
+  });
 
   function loadPlanDays(btn){
     const ym = el('docMonth').value;
