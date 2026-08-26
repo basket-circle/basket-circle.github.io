@@ -39,6 +39,7 @@
     .tagpill{display:inline-block;color:#fff;font-size:11px;font-weight:bold;padding:1px 7px;border-radius:9px;margin-right:5px;}
     .breakdown{font-size:12px;color:#666;margin:2px 0 8px;}
     .person{display:block;margin:4px 0;}
+    .gby{display:block;font-size:11px;color:#999;margin:0 0 0 8px;}   /* 体験・同伴の「だれが追加したか」。名前の折り返しに巻き込まれないよう2行目に置く */
   .add-guest { margin-top:4px; background:none; border:1px dashed #bbb; color:#777; border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; }
   .guest-rm { color:#c0392b; margin-left:6px; cursor:pointer; font-weight:bold; }
   .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; }
@@ -139,9 +140,11 @@
       // 送信中（楽観的に出しているだけ）は薄く表示し、✕はまだ出さない（guestId が未確定なため）
       const rm = (!p.pending && String(p.byUserId)===String(userId)) ? ' <span class="guest-rm" data-gid="'+p.guestId+'">✕</span>' : '';
       const sending = p.pending ? ' <span style="font-size:11px;color:#999;">追加中…</span>' : '';
+      // だれが追加したか（同伴＝親、体験＝紹介者）を小さくグレーで2行目に添える
+      const by = p.byName ? '<span class="gby">（'+escapeHtml(p.byName)+'さんの'+(p.kind==='同伴'?'同伴':'紹介')+'）</span>' : '';
       // 同伴＝LINEを持たない家族（お子さんなど）。体験と同じくレベルも出す
       const tag = (p.kind === '同伴') ? COMPANION_TAG : GUEST_TAG;
-      return '<span class="person"'+(p.pending?' style="opacity:.55"':'')+'>'+tag+levelTag(p.level)+escapeHtml(p.displayName)+rm+sending+'</span>';
+      return '<span class="person"'+(p.pending?' style="opacity:.55"':'')+'>'+tag+levelTag(p.level)+escapeHtml(p.displayName)+rm+sending+by+'</span>';
     }
     return '<span class="person">'+levelTag(p.level)+tagFrom(CAT_TAG,p.category)+tagFrom(TRANS_TAG,p.transport)+escapeHtml(p.displayName)+'</span>';
   }
@@ -293,7 +296,7 @@
     const ev = boardData.find(function(e){ return e.eventId === eventId; });
     if (ev){
       ev.join.push({ displayName:name, level:level, isGuest:true, kind:kind,
-                     byUserId:userId, tmpId:tmpId, pending:true });
+                     byUserId:userId, byName:myProfile.displayName, tmpId:tmpId, pending:true });
       ev.joinCount = ev.join.length;
       render(boardData);        // 「追加中…」付きで薄く表示
     }
