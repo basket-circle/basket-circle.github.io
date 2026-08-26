@@ -63,6 +63,10 @@
   </div>
   <div id="container" style="display:none;">
     <h1>📋 出席票</h1>
+    <div id="netBanner" style="display:none; background:#fdecea; border:1px solid #f5c6c2; border-radius:10px; padding:12px 14px; margin:0 auto 14px; max-width:460px; font-size:13px; line-height:1.6;">
+      <div id="netMsg"></div>
+      <div><button id="btnReload" style="margin-top:8px; background:#06c755; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:13px; font-weight:bold;">再読み込み</button></div>
+    </div>
     <div id="regBanner" style="display:none; background:#fff8e1; border:1px solid #ffe0a3; border-radius:10px; padding:12px 14px; margin:0 auto 14px; max-width:460px; font-size:13px; line-height:1.6;">
       プロフィール未登録です。よかったらメニューのプロフィール登録画面から登録してください🏀
       <div><a href="https://liff.line.me/2010311760-E5ENH95n" style="display:inline-block; margin-top:8px; background:#06c755; color:#fff; padding:8px 16px; border-radius:8px; text-decoration:none; font-weight:bold;">プロフィール登録画面へ</a></div>
@@ -268,6 +272,12 @@
       .catch(function(e){ alert('削除に失敗：'+e); });
   }
 
+  function showNetError(html){
+    document.getElementById('netMsg').innerHTML = html;
+    document.getElementById('netBanner').style.display='block';
+  }
+  document.getElementById('btnReload').addEventListener('click', function(){ location.reload(); });
+
   async function main(){
     try {
       // 読み込み中はバスケのアニメ表示（テキストで上書きしない）
@@ -282,8 +292,11 @@
       ]);
       const pr = results[0], br = results[1];
       if (pr && pr.ok && pr.data){ myProfile.level=pr.data.level||''; myProfile.category=pr.data.category||''; myProfile.transport=pr.data.transport||''; if(pr.data.displayName) myProfile.displayName=pr.data.displayName; }
-      else { document.getElementById('regBanner').style.display='block'; }  // 未登録なら登録を促すバナー
+      else if (pr && pr.ok){ document.getElementById('regBanner').style.display='block'; }  // サーバが「登録なし」と答えたときだけ登録を促すバナー
       if (br && br.ok){ boardData = br.data; render(boardData); }
+      // 通信に失敗したときは失敗した旨と対処法を出す（未登録と誤表示しない。電波の悪い外出先で起きやすい）
+      if (!(br && br.ok)) showNetError('⚠️ 通信に失敗しました<br>電波の弱い場所では起きやすいです。<br>電波の良いところで［再読み込み］を押してください。');
+      else if (!(pr && pr.ok)) showNetError('⚠️ プロフィールを読み込めませんでした（通信が不安定です）<br>出欠の回答はこのままできます。');
       loadingEl.style.display='none';
       document.getElementById('container').style.display='block';
     } catch(err){ loadingEl.textContent = '初期化エラー：' + err; }
