@@ -77,8 +77,13 @@
 
   <div id="guestModal" class="modal-bg">
     <div class="modal">
-      <div class="modal-title">体験者を追加</div>
+      <div class="modal-title">体験者・同伴を追加</div>
       <div id="guestEvLabel" class="modal-sub"></div>
+      <label class="glabel">どちらですか</label>
+      <div class="glevels">
+        <label><input type="radio" name="gkind" value="体験" checked> 🟧 体験の方</label>
+        <label><input type="radio" name="gkind" value="同伴"> 🟤 家族・同伴（お子さんなど）</label>
+      </div>
       <label class="glabel">お名前</label>
       <input type="text" id="guestName" maxlength="20" placeholder="例：ゲスト花子">
       <label class="glabel">レベル</label>
@@ -128,21 +133,28 @@
   }
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
   const GUEST_TAG = '<span class="tagpill" style="background:#ff7043">体験</span>';
+  const COMPANION_TAG = '<span class="tagpill" style="background:#8d6e63">同伴</span>';
   function personHtml(p){
     if (p.isGuest){
       const rm = (String(p.byUserId)===String(userId)) ? ' <span class="guest-rm" data-gid="'+p.guestId+'">✕</span>' : '';
-      return '<span class="person">'+GUEST_TAG+levelTag(p.level)+escapeHtml(p.displayName)+rm+'</span>';
+      // 同伴＝LINEを持たない家族（お子さんなど）。体験と同じくレベルも出す
+      const tag = (p.kind === '同伴') ? COMPANION_TAG : GUEST_TAG;
+      return '<span class="person">'+tag+levelTag(p.level)+escapeHtml(p.displayName)+rm+'</span>';
     }
     return '<span class="person">'+levelTag(p.level)+tagFrom(CAT_TAG,p.category)+tagFrom(TRANS_TAG,p.transport)+escapeHtml(p.displayName)+'</span>';
   }
   function tagClass(kind){ if(kind==='練習試合') return 'tag match'; if(kind==='イベント') return 'tag event'; return 'tag'; }
   function breakdownText(list){
-    let exp=0, blank=0, beg=0, none=0, guest=0;
+    let exp=0, blank=0, beg=0, none=0, guest=0, comp=0;
     list.forEach(function(p){
-      if(p.isGuest)guest++;
+      if(p.isGuest){ if(p.kind==='同伴') comp++; else guest++; }
       if(p.level==='経験者')exp++; else if(p.level==='ブランク勢')blank++; else if(p.level==='初心者')beg++; else none++;
     });
-    return '内訳：経験'+exp+'・ブランク'+blank+'・初心'+beg+(none?'・未登録'+none:'')+(guest?'（うち体験'+guest+'）':'');
+    const inner = [];   // 内数（体験・同伴もレベル内訳に含めたうえで、その内訳を添える）
+    if(guest) inner.push('体験'+guest);
+    if(comp)  inner.push('同伴'+comp);
+    return '内訳：経験'+exp+'・ブランク'+blank+'・初心'+beg+(none?'・未登録'+none:'')
+         + (inner.length?'（うち'+inner.join('・')+'）':'');
   }
 
   let cbSeq = 0;
@@ -190,7 +202,7 @@
         '<div class="roster"><span class="label">◯参加('+ev.joinCount+')</span><br>'+joinBody+'</div>'+
         '<div class="roster"><span class="label">△検討中('+ev.undecidedCount+')</span><br>'+(ev.undecided.map(personHtml).join('')||'<span style="color:#aaa">まだいません</span>')+'</div>'+
         shootingHtml+
-        '<button class="add-guest" data-ev="'+escapeHtml(ev.eventId)+'" data-label="'+escapeHtml(ev.date+' '+(ev.eventName||ev.kind))+'">＋ 体験者を追加</button>'+
+        '<button class="add-guest" data-ev="'+escapeHtml(ev.eventId)+'" data-label="'+escapeHtml(ev.date+' '+(ev.eventName||ev.kind))+'">＋ 体験者・同伴を追加</button>'+
         '<div class="btns"'+(saving?' style="opacity:.55"':'')+'>'+
           '<button data-st="参加" class="'+(ev.myStatus==='参加'?'on-join':'')+'"'+(saving?' disabled':'')+'>◯参加</button>'+
           '<button data-st="検討中" class="'+(ev.myStatus==='検討中'?'on-undecided':'')+'"'+(saving?' disabled':'')+'>△検討中</button>'+
@@ -245,11 +257,13 @@
   }
 
   let guestEventId = null;
+  function guestKind(){ const k=document.querySelector('input[name=gkind]:checked'); return k?k.value:'体験'; }
   function openGuestModal(eventId, label){
     guestEventId = eventId;
     document.getElementById('guestEvLabel').textContent = label || '';
     document.getElementById('guestName').value = '';
     document.querySelectorAll('input[name=glevel]').forEach(function(r){ r.checked=false; });
+    document.querySelectorAll('input[name=gkind]').forEach(function(r){ r.checked = (r.value==='体験'); });
     document.getElementById('guestModal').style.display='block';
   }
   function closeGuestModal(){ document.getElementById('guestModal').style.display='none'; }
@@ -261,12 +275,12 @@
     if(!name){ alert('お名前を入力してください'); return; }
     if(!lv){ alert('レベルを選んでください'); return; }
     const btn=this; btn.disabled=true;
-    callApi({ action:'addGuest', userId:userId, eventId:guestEventId, name:name, level:lv.value })
+    callApi({ action:'addGuest', userId:userId, eventId:guestEventId, name:name, level:lv.value, kind:guestKind() })
       .then(function(res){ btn.disabled=false; if(res&&res.ok){ closeGuestModal(); refresh(); } else { alert('追加に失敗：'+(res&&res.error)); } })
       .catch(function(e){ btn.disabled=false; alert('追加に失敗：'+e); });
   });
   function removeGuestClient(guestId){
-    if(!confirm('この体験者を削除しますか？')) return;
+    if(!confirm('この方を削除しますか？')) return;
     callApi({ action:'removeGuest', userId:userId, guestId:guestId })
       .then(function(res){ if(res&&res.ok){ refresh(); } else { alert('削除に失敗：'+(res&&res.error)); } })
       .catch(function(e){ alert('削除に失敗：'+e); });
