@@ -136,10 +136,12 @@
   const COMPANION_TAG = '<span class="tagpill" style="background:#8d6e63">同伴</span>';
   function personHtml(p){
     if (p.isGuest){
-      const rm = (String(p.byUserId)===String(userId)) ? ' <span class="guest-rm" data-gid="'+p.guestId+'">✕</span>' : '';
+      // 送信中（楽観的に出しているだけ）は薄く表示し、✕はまだ出さない（guestId が未確定なため）
+      const rm = (!p.pending && String(p.byUserId)===String(userId)) ? ' <span class="guest-rm" data-gid="'+p.guestId+'">✕</span>' : '';
+      const sending = p.pending ? ' <span style="font-size:11px;color:#999;">追加中…</span>' : '';
       // 同伴＝LINEを持たない家族（お子さんなど）。体験と同じくレベルも出す
       const tag = (p.kind === '同伴') ? COMPANION_TAG : GUEST_TAG;
-      return '<span class="person">'+tag+levelTag(p.level)+escapeHtml(p.displayName)+rm+'</span>';
+      return '<span class="person"'+(p.pending?' style="opacity:.55"':'')+'>'+tag+levelTag(p.level)+escapeHtml(p.displayName)+rm+sending+'</span>';
     }
     return '<span class="person">'+levelTag(p.level)+tagFrom(CAT_TAG,p.category)+tagFrom(TRANS_TAG,p.transport)+escapeHtml(p.displayName)+'</span>';
   }
@@ -269,21 +271,60 @@
   function closeGuestModal(){ document.getElementById('guestModal').style.display='none'; }
   document.getElementById('guestCancel').addEventListener('click', closeGuestModal);
   document.getElementById('guestModal').addEventListener('click', function(e){ if(e.target===this) closeGuestModal(); });
+  // 追加・削除も出欠ボタンと同じ楽観的更新にする（押した瞬間に名簿へ反映。
+  // 以前は「応答を待つ→さらに refresh() でもう1往復」で、名前が出るまで2往復かかっていた）
+  let guestSending = false, guestTmpSeq = 0;
+  function dropTmpGuest_(ev, tmpId){
+    if (!ev) return;
+    ev.join = ev.join.filter(function(p){ return p.tmpId !== tmpId; });
+    ev.joinCount = ev.join.length;
+    render(boardData);
+  }
   document.getElementById('guestSubmit').addEventListener('click', function(){
+    if (guestSending) return;   // 連打で二重登録しない
     const name = document.getElementById('guestName').value.trim();
     const lv = document.querySelector('input[name=glevel]:checked');
     if(!name){ alert('お名前を入力してください'); return; }
     if(!lv){ alert('レベルを選んでください'); return; }
-    const btn=this; btn.disabled=true;
-    callApi({ action:'addGuest', userId:userId, eventId:guestEventId, name:name, level:lv.value, kind:guestKind() })
-      .then(function(res){ btn.disabled=false; if(res&&res.ok){ closeGuestModal(); refresh(); } else { alert('追加に失敗：'+(res&&res.error)); } })
-      .catch(function(e){ btn.disabled=false; alert('追加に失敗：'+e); });
+    const kind = guestKind(), eventId = guestEventId, level = lv.value;
+    const tmpId = 'T' + (++guestTmpSeq);
+    guestSending = true;
+    closeGuestModal();          // すぐ閉じる（押した手応えを出す）
+    const ev = boardData.find(function(e){ return e.eventId === eventId; });
+    if (ev){
+      ev.join.push({ displayName:name, level:level, isGuest:true, kind:kind,
+                     byUserId:userId, tmpId:tmpId, pending:true });
+      ev.joinCount = ev.join.length;
+      render(boardData);        // 「追加中…」付きで薄く表示
+    }
+    callApi({ action:'addGuest', userId:userId, eventId:eventId, name:name, level:level, kind:kind })
+      .then(function(res){
+        guestSending = false;
+        if (res && res.ok){
+          const p = ev && ev.join.find(function(x){ return x.tmpId === tmpId; });
+          if (p){ p.guestId = res.data.guestId; p.pending = false; delete p.tmpId; render(boardData); }
+          else { refresh(); }   // 画面が入れ替わっていたときの保険
+        } else {
+          dropTmpGuest_(ev, tmpId);
+          alert('追加に失敗：'+(res&&res.error));
+        }
+      })
+      .catch(function(e){ guestSending = false; dropTmpGuest_(ev, tmpId); alert('追加に失敗：'+e); });
   });
   function removeGuestClient(guestId){
     if(!confirm('この方を削除しますか？')) return;
+    let target = null;
+    boardData.forEach(function(e){
+      (e.join||[]).forEach(function(p){ if(String(p.guestId) === String(guestId)) target = e; });
+    });
+    if (target){
+      target.join = target.join.filter(function(p){ return String(p.guestId) !== String(guestId); });
+      target.joinCount = target.join.length;
+      render(boardData);        // 押した瞬間に消す
+    }
     callApi({ action:'removeGuest', userId:userId, guestId:guestId })
-      .then(function(res){ if(res&&res.ok){ refresh(); } else { alert('削除に失敗：'+(res&&res.error)); } })
-      .catch(function(e){ alert('削除に失敗：'+e); });
+      .then(function(res){ if(!(res && res.ok)){ alert('削除に失敗：'+(res&&res.error)); refresh(); } })
+      .catch(function(e){ alert('削除に失敗：'+e); refresh(); });
   }
 
   function showNetError(html){
