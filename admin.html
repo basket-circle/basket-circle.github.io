@@ -117,6 +117,9 @@
       <div class="card">
         <label class="f">対象の活動を選択</label>
         <select id="contactEventSel"></select>
+        <label class="f">中止の理由（任意）</label>
+        <input type="text" id="cancelReason" placeholder="例：体育館が使えないためです">
+        <div class="mini" style="margin-top:4px;">中止のお知らせに、この一文をそのまま入れます（空でもOK）。</div>
         <div style="margin-top:12px;">
           <button class="act solid" id="btnSendCard">📨 出欠カードを今すぐ送る</button>
           <button class="act danger" id="btnCancelNotice">⚠️ 中止のお知らせを送る</button>
@@ -516,10 +519,11 @@
   });
   el('btnCancelNotice').addEventListener('click', function(){
     const ev=el('contactEventSel').value; if(!ev){ alert('活動を選んでください'); return; }
-    if(!confirm('この活動の【中止のお知らせ】を全員に送信し、あわせて活動を非公開にします。よろしいですか？')) return;
+    const reason = el('cancelReason').value.trim();
+    if(!confirm('この活動の【中止のお知らせ】を全員に送信し、あわせて活動を非公開にします。よろしいですか？'+(reason?('\n\n理由：'+reason):'\n\n（理由は入れません）'))) return;
     const btn=this; btn.disabled=true; el('contactMsg').textContent='送信中…';
-    callApi({ action:'adminCancelNotice', userId:userId, eventId:ev })
-      .then(function(r){ btn.disabled=false; el('contactMsg').textContent = (r&&r.ok)?'中止通知を送信し、非公開にしました⚠️':'失敗：'+(r&&r.error); })
+    callApi({ action:'adminCancelNotice', userId:userId, eventId:ev, reason:reason })
+      .then(function(r){ btn.disabled=false; if(r&&r.ok) el('cancelReason').value=''; el('contactMsg').textContent = (r&&r.ok)?'中止通知を送信し、非公開にしました⚠️':'失敗：'+(r&&r.error); })
       .catch(function(e){ btn.disabled=false; el('contactMsg').textContent='失敗：'+e; });
   });
 
