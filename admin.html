@@ -115,17 +115,23 @@
     </div>
     <div id="pane-contact" class="pane">
       <div class="card">
-        <label class="f">対象の活動を選択</label>
+        <div style="font-weight:bold;margin-bottom:6px;">出欠カードを送る</div>
+        <label class="f">対象の活動</label>
         <select id="contactEventSel"></select>
+        <button class="act solid" id="btnSendCard" style="margin-top:12px;">📨 今すぐ送る</button>
+        <div class="msg" id="contactMsg"></div>
+        <div class="mini" style="margin-top:6px;">※活動の3日前に自動で送られます。手動で送りたいときだけ使ってください（全員に届きます）。</div>
+      </div>
+      <div class="card">
+        <div style="font-weight:bold;margin-bottom:6px;">⚠️ 中止のお知らせ</div>
+        <label class="f">対象の活動</label>
+        <select id="cancelEventSel"></select>
         <label class="f">中止の理由（任意）</label>
         <input type="text" id="cancelReason" placeholder="例：体育館が使えないためです">
-        <div class="mini" style="margin-top:4px;">中止のお知らせに、この一文をそのまま入れます（空でもOK）。</div>
-        <div style="margin-top:12px;">
-          <button class="act solid" id="btnSendCard">📨 出欠カードを今すぐ送る</button>
-          <button class="act danger" id="btnCancelNotice">⚠️ 中止のお知らせを送る</button>
-        </div>
-        <div class="msg" id="contactMsg"></div>
-        <div class="mini" style="margin-top:8px;">※どちらも対象メンバー全員に届きます。</div>
+        <div class="mini" style="margin-top:4px;">お知らせに、この一文をそのまま入れます（空でもOK）。</div>
+        <button class="act danger" id="btnCancelNotice" style="margin-top:12px;">⚠️ 中止のお知らせを送る</button>
+        <div class="msg" id="cancelMsg"></div>
+        <div class="mini" style="margin-top:6px;">※全員に届きます。送信後、この活動は自動で非公開になります。</div>
       </div>
       <div class="card">
         <div style="font-weight:bold;margin-bottom:6px;">全体に一斉送信</div>
@@ -506,7 +512,9 @@
   });
 
   function loadContactTab(){
-    callApi({ action:'adminGetEvents', userId:userId }).then(function(res){ if(res&&res.ok) fillEventOptions('contactEventSel', upcomingEvents(res.data)); });  // 連絡は今日以降のみ（過去は不要）
+    callApi({ action:'adminGetEvents', userId:userId }).then(function(res){  // 連絡は今日以降のみ（過去は不要）。カード送信と中止でセレクトは別（押し間違い防止）
+      if(res&&res.ok){ const up=upcomingEvents(res.data); fillEventOptions('contactEventSel', up); fillEventOptions('cancelEventSel', up); }
+    });
     loadSettings();
   }
   el('btnSendCard').addEventListener('click', function(){
@@ -518,13 +526,14 @@
       .catch(function(e){ btn.disabled=false; el('contactMsg').textContent='失敗：'+e; });
   });
   el('btnCancelNotice').addEventListener('click', function(){
-    const ev=el('contactEventSel').value; if(!ev){ alert('活動を選んでください'); return; }
+    const sel=el('cancelEventSel'); const ev=sel.value; if(!ev){ alert('活動を選んでください'); return; }
     const reason = el('cancelReason').value.trim();
-    if(!confirm('この活動の【中止のお知らせ】を全員に送信し、あわせて活動を非公開にします。よろしいですか？'+(reason?('\n\n理由：'+reason):'\n\n（理由は入れません）'))) return;
-    const btn=this; btn.disabled=true; el('contactMsg').textContent='送信中…';
+    if(!confirm(sel.options[sel.selectedIndex].text+'\n\nこの活動の【中止のお知らせ】を全員に送信し、あわせて活動を非公開にします。よろしいですか？'+(reason?('\n\n理由：'+reason):'\n\n（理由は入れません）'))) return;
+    const btn=this; btn.disabled=true; el('cancelMsg').textContent='送信中…';
     callApi({ action:'adminCancelNotice', userId:userId, eventId:ev, reason:reason })
-      .then(function(r){ btn.disabled=false; if(r&&r.ok) el('cancelReason').value=''; el('contactMsg').textContent = (r&&r.ok)?'中止通知を送信し、非公開にしました⚠️':'失敗：'+(r&&r.error); })
-      .catch(function(e){ btn.disabled=false; el('contactMsg').textContent='失敗：'+e; });
+      .then(function(r){ btn.disabled=false; if(r&&r.ok){ el('cancelReason').value=''; sel.value=''; }  // 送り直し（二重送信）を防ぐため選択も戻す
+        el('cancelMsg').textContent = (r&&r.ok)?'中止通知を送信し、非公開にしました⚠️':'失敗：'+(r&&r.error); })
+      .catch(function(e){ btn.disabled=false; el('cancelMsg').textContent='失敗：'+e; });
   });
 
   // ===== ⚙連絡（管理者不在 / 一斉送信）=====
