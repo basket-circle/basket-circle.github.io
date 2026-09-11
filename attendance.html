@@ -163,11 +163,23 @@
   }
 
   let cbSeq = 0;
+  // GASの応答は速い回線でも2〜5秒かかる（CDNが無く毎回スクリプトが起動するため）。
+  // 一発勝負だと電波のもたつきや画面ロックでの中断で失敗しやすいので、
+  // 何度呼んでも結果が同じものだけ「8秒×2回」にする（最大の待ち時間は従来の15秒とほぼ同じ）。
+  // ⚠️ addGuest は再試行すると二重に登録されるので入れない。
+  const RETRY_OK = { getInit:1, getBoard:1, getProfile:1, setAttendance:1, removeGuest:1 };
   function callApi(params){
+    const retryable = !!RETRY_OK[params.action];
+    return callOnce(params, retryable ? 8000 : 15000).catch(function(e){
+      if(!retryable) throw e;
+      return callOnce(params, 8000);   // 1回だけやり直す（読み込み中のアニメは出たままなので無言にはならない）
+    });
+  }
+  function callOnce(params, timeoutMs){
     return new Promise(function(resolve, reject){
       const cbName = 'jcb_' + (cbSeq++);
       let s;
-      const to = setTimeout(function(){ cleanup(); reject('タイムアウト'); }, 15000);
+      const to = setTimeout(function(){ cleanup(); reject('タイムアウト'); }, timeoutMs);
       function cleanup(){ try{ delete window[cbName]; }catch(e){} if(s&&s.parentNode) s.parentNode.removeChild(s); clearTimeout(to); }
       window[cbName] = function(res){ cleanup(); resolve(res); };
       params.callback = cbName;
@@ -344,17 +356,17 @@
       const profile = await liff.getProfile();
       userId = profile.userId;
       myProfile.displayName = profile.displayName || '';
-      const results = await Promise.all([
-        callApi({ action:'getProfile', userId:userId }).catch(function(){ return null; }),
-        callApi({ action:'getBoard',   userId:userId }).catch(function(){ return null; })
-      ]);
-      const pr = results[0], br = results[1];
-      if (pr && pr.ok && pr.data){ myProfile.level=pr.data.level||''; myProfile.category=pr.data.category||''; myProfile.transport=pr.data.transport||''; if(pr.data.displayName) myProfile.displayName=pr.data.displayName; }
-      else if (pr && pr.ok){ document.getElementById('regBanner').style.display='block'; }  // サーバが「登録なし」と答えたときだけ登録を促すバナー
-      if (br && br.ok){ boardData = br.data; render(boardData); }
-      // 通信に失敗したときは失敗した旨と対処法を出す（未登録と誤表示しない。電波の悪い外出先で起きやすい）
-      if (!(br && br.ok)) showNetError('⚠️ 通信に失敗しました<br>電波の弱い場所では起きやすいです。<br>電波の良いところで［再読み込み］を押してください。');
-      else if (!(pr && pr.ok)) showNetError('⚠️ プロフィールを読み込めませんでした（通信が不安定です）<br>出欠の回答はこのままできます。');
+      // 活動一覧と自分のプロフィールは1本の通信で取る（2本だと失敗の機会も待ち時間も2倍になる）
+      const res = await callApi({ action:'getInit', userId:userId }).catch(function(){ return null; });
+      if (res && res.ok && res.data){
+        const p = res.data.profile;
+        if (p){ myProfile.level=p.level||''; myProfile.category=p.category||''; myProfile.transport=p.transport||''; if(p.displayName) myProfile.displayName=p.displayName; }
+        else { document.getElementById('regBanner').style.display='block'; }  // サーバが「登録なし」と答えたときだけ登録を促すバナー
+        boardData = res.data.board; render(boardData);
+      } else {
+        // 通信に失敗したときは失敗した旨と対処法を出す（未登録と誤表示しない。電波の悪い外出先で起きやすい）
+        showNetError('⚠️ 通信に失敗しました<br>電波の弱い場所では起きやすいです。<br>電波の良いところで［再読み込み］を押してください。');
+      }
       loadingEl.style.display='none';
       document.getElementById('container').style.display='block';
     } catch(err){ loadingEl.textContent = '初期化エラー：' + err; }
