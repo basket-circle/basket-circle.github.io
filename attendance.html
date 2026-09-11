@@ -163,23 +163,25 @@
   }
 
   let cbSeq = 0;
-  // GASの応答は速い回線でも2〜5秒かかる（CDNが無く毎回スクリプトが起動するため）。
-  // 一発勝負だと電波のもたつきや画面ロックでの中断で失敗しやすいので、
-  // 何度呼んでも結果が同じものだけ「8秒×2回」にする（最大の待ち時間は従来の15秒とほぼ同じ）。
+  // GASの応答は2秒〜20秒超まで大きくばらつく（CDNが無く毎回スクリプトが起動し、
+  // 他の人の実行との順番待ちも起きるため）。短く見切ると「待てば表示できたもの」を
+  // 自分で失敗にしてしまうので長めに待つ（読み込み中のアニメは出たまま）。
+  const TIMEOUT_MS = 25000;
+  // やり直すのは即エラーのときだけ＝画面ロックやアプリ切替で <script> の読み込みが
+  // 中断されたケース。時間切れのやり直しはしない（25秒待ってさらに25秒は長すぎる）。
   // ⚠️ addGuest は再試行すると二重に登録されるので入れない。
   const RETRY_OK = { getInit:1, getBoard:1, getProfile:1, setAttendance:1, removeGuest:1 };
   function callApi(params){
-    const retryable = !!RETRY_OK[params.action];
-    return callOnce(params, retryable ? 8000 : 15000).catch(function(e){
-      if(!retryable) throw e;
-      return callOnce(params, 8000);   // 1回だけやり直す（読み込み中のアニメは出たままなので無言にはならない）
+    return callOnce(params).catch(function(e){
+      if(e !== '通信エラー' || !RETRY_OK[params.action]) throw e;
+      return callOnce(params);   // 1回だけやり直す
     });
   }
-  function callOnce(params, timeoutMs){
+  function callOnce(params){
     return new Promise(function(resolve, reject){
       const cbName = 'jcb_' + (cbSeq++);
       let s;
-      const to = setTimeout(function(){ cleanup(); reject('タイムアウト'); }, timeoutMs);
+      const to = setTimeout(function(){ cleanup(); reject('タイムアウト'); }, TIMEOUT_MS);
       function cleanup(){ try{ delete window[cbName]; }catch(e){} if(s&&s.parentNode) s.parentNode.removeChild(s); clearTimeout(to); }
       window[cbName] = function(res){ cleanup(); resolve(res); };
       params.callback = cbName;
@@ -357,7 +359,13 @@
       userId = profile.userId;
       myProfile.displayName = profile.displayName || '';
       // 活動一覧と自分のプロフィールは1本の通信で取る（2本だと失敗の機会も待ち時間も2倍になる）
+      // 待ちが長いときは黙って待たせない（GASが混み合うと20秒を超えることがある）
+      const slowTimer = setTimeout(function(){
+        const m = document.querySelector('#loading .loadmsg');
+        if(m) m.innerHTML = '通信が混み合っています。<br>もう少しお待ちください…';
+      }, 10000);
       const res = await callApi({ action:'getInit', userId:userId }).catch(function(){ return null; });
+      clearTimeout(slowTimer);
       if (res && res.ok && res.data){
         const p = res.data.profile;
         if (p){ myProfile.level=p.level||''; myProfile.category=p.category||''; myProfile.transport=p.transport||''; if(p.displayName) myProfile.displayName=p.displayName; }
