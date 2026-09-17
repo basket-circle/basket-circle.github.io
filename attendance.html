@@ -350,21 +350,37 @@
   }
   document.getElementById('btnReload').addEventListener('click', function(){ location.reload(); });
 
+  // 前回開いたときの userId だけ端末に覚えておく（名簿は保存しない）。
+  // LINEの初期化 → 問い合わせ と順番に待つと時間が足し算になるので、覚えていれば
+  // 初期化を待たずに問い合わせを始めて、2つを並行して走らせる。
+  const UID_KEY = 'att_uid';
+  function loadUid(){ try { return localStorage.getItem(UID_KEY) || null; } catch(e){ return null; } }
+  function saveUid(uid){ try { localStorage.setItem(UID_KEY, uid); } catch(e){} }
+
   async function main(){
     try {
       // 読み込み中はバスケのアニメ表示（テキストで上書きしない）
-      await liff.init({ liffId: LIFF_ID });
-      if(!liff.isLoggedIn()){ liff.login(); return; }
-      const profile = await liff.getProfile();
-      userId = profile.userId;
-      myProfile.displayName = profile.displayName || '';
-      // 活動一覧と自分のプロフィールは1本の通信で取る（2本だと失敗の機会も待ち時間も2倍になる）
       // 待ちが長いときは黙って待たせない（GASが混み合うと20秒を超えることがある）
       const slowTimer = setTimeout(function(){
         const m = document.querySelector('#loading .loadmsg');
         if(m) m.innerHTML = '通信が混み合っています。<br>もう少しお待ちください…';
       }, 10000);
-      const res = await callApi({ action:'getInit', userId:userId }).catch(function(){ return null; });
+      // 活動一覧と自分のプロフィールは1本の通信で取る（2本だと失敗の機会も待ち時間も2倍になる）
+      const earlyUid = loadUid();
+      const earlyReq = earlyUid
+        ? callApi({ action:'getInit', userId:earlyUid }).catch(function(){ return null; })
+        : null;   // 初回だけは覚えていないので従来どおり（初期化を待ってから問い合わせ）
+
+      await liff.init({ liffId: LIFF_ID });
+      if(!liff.isLoggedIn()){ liff.login(); return; }
+      const profile = await liff.getProfile();
+      userId = profile.userId;
+      saveUid(userId);
+      myProfile.displayName = profile.displayName || '';
+      // 先に始めた問い合わせは、同じ人のものだったときだけ使う（端末を共有していた等で違えば取り直す）
+      const res = (earlyReq && earlyUid === userId)
+        ? await earlyReq
+        : await callApi({ action:'getInit', userId:userId }).catch(function(){ return null; });
       clearTimeout(slowTimer);
       if (res && res.ok && res.data){
         const p = res.data.profile;
