@@ -359,17 +359,10 @@
       userId = profile.userId;
       myProfile.displayName = profile.displayName || '';
       // 活動一覧と自分のプロフィールは1本の通信で取る（2本だと失敗の機会も待ち時間も2倍になる）
-      // 待ちが長いときは黙って待たせない（深夜はGoogle側が混んで20秒を超えることがある）。
-      // 10秒でメッセージと［再読み込み］を出し、待つ／やめるをメンバーが選べるようにする。
-      // ⚠️ ここで打ち切らない（10秒で止めると、普段の読み込み6〜10秒まで失敗にしてしまう）。
-      // そのまま待てば22秒で届いた分もちゃんと表示される。
+      // 待ちが長いときは黙って待たせない（GASが混み合うと20秒を超えることがある）
       const slowTimer = setTimeout(function(){
         const m = document.querySelector('#loading .loadmsg');
-        if(!m) return;
-        m.innerHTML = '通信が混み合っています。<br>もう少しお待ちください…'
-          + '<div><button id="btnSlowReload" style="margin-top:12px; background:#06c755; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:13px; font-weight:bold;">再読み込み</button></div>';
-        const b = document.getElementById('btnSlowReload');
-        if(b) b.addEventListener('click', function(){ location.reload(); });
+        if(m) m.innerHTML = '通信が混み合っています。<br>もう少しお待ちください…';
       }, 10000);
       const res = await callApi({ action:'getInit', userId:userId }).catch(function(){ return null; });
       clearTimeout(slowTimer);
