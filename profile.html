@@ -17,7 +17,7 @@
     button { width:100%; margin-top:24px; padding:14px; font-size:16px; font-weight:bold; color:#fff; background:#06c755; border:none; border-radius:10px; }
     button:disabled { background:#aaa; }
     .hint { font-size:12px; color:#888; margin-top:4px; }
-    #msg { text-align:center; margin-top:16px; font-weight:bold; }
+    #msg { text-align:center; margin-top:16px; font-weight:bold; white-space:pre-line; }
     #loading { text-align:center; padding:40px; color:#888; }
   </style>
 </head>
@@ -140,8 +140,25 @@
         .then(function(res){
           if (res && res.ok) {
             cacheSet('profile_'+userId, { displayName:displayName, level:levelEl.value, category:catEl.value, transport:transEl.value });
-            document.getElementById('msg').textContent = '✅ 登録しました！この画面は閉じてOKです。';
-            setTimeout(function(){ if (liff.isInClient()) liff.closeWindow(); }, 1200);
+            var msgEl = document.getElementById('msg');
+            msgEl.textContent = '✅ 登録しました！この画面は閉じてOKです。';
+            // 新規登録のときだけ、本人の発言としてトークにあいさつを送る（運営のチャット一覧に現れ、個別に連絡できるようになる）
+            // LIFF のスコープ chat_message.write が必要。送れなかったときは理由を1行出す（登録は完了扱い）
+            var isNew = res.data && res.data.updated === false;
+            var p;
+            if (!isNew) {
+              p = Promise.resolve();
+            } else if (!liff.isInClient()) {
+              msgEl.textContent += '\n（LINEの外で開いているため、トークへのあいさつは送っていません）';
+              p = Promise.resolve();
+            } else {
+              p = liff.sendMessages([{ type:'text', text:'プロフィールを登録しました！' + displayName + 'です。よろしくお願いします☺' }])
+                .catch(function(e){
+                  msgEl.textContent += '\n⚠️ トークへのあいさつの送信に失敗：' + (e && (e.message || e.code) || e);
+                  return 'failed';
+                });
+            }
+            p.then(function(r){ if (r !== 'failed') setTimeout(function(){ if (liff.isInClient()) liff.closeWindow(); }, 1200); });
           } else {
             btn.disabled = false;
             document.getElementById('msg').textContent = '⚠️ 保存に失敗：' + (res && res.error);
