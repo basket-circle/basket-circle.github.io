@@ -61,6 +61,7 @@
     const LIFF_ID = "2010311760-E5ENH95n";
     const API = "https://script.google.com/macros/s/AKfycbziHmBXwwFiH6cTbouTHRNLhORzMO629xUBwi0jGIjX9TsJC0iPuse1KAF7r-UDPDnT/exec";
     let userId = null;
+    let serverProfile = 'unknown';   // 画面を開いたときのサーバの答え：'none'＝登録なし／'exists'＝登録あり／'unknown'＝未取得
     const loadingEl = document.getElementById('loading');
 
     function cacheGet(k){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
@@ -113,6 +114,7 @@
         }
         showApp();
         callApi({ action:'getProfile', userId: userId }).then(function(res){
+          if (res && res.ok) serverProfile = res.data ? 'exists' : 'none';
           if (res && res.ok && res.data) {
             const d = res.data;
             if (d.displayName) document.getElementById('displayName').value = d.displayName;
@@ -134,37 +136,37 @@
       if (!catEl) { alert('区分を選んでください'); return; }
       if (!transEl) { alert('交通手段を選んでください'); return; }
       const btn = this; btn.disabled = true;
-      document.getElementById('msg').textContent = '保存中…';
-      callApi({ action:'saveProfile', userId: userId, displayName: displayName,
-                level: levelEl.value, category: catEl.value, transport: transEl.value })
-        .then(function(res){
-          if (res && res.ok) {
-            cacheSet('profile_'+userId, { displayName:displayName, level:levelEl.value, category:catEl.value, transport:transEl.value });
-            var msgEl = document.getElementById('msg');
-            msgEl.textContent = '✅ 登録しました！この画面は閉じてOKです。';
-            // 新規登録のときだけ、本人の発言としてトークにあいさつを送る（運営のチャット一覧に現れ、個別に連絡できるようになる）
-            // LIFF のスコープ chat_message.write が必要。送れなかったときは理由を1行出す（登録は完了扱い）
-            var isNew = res.data && res.data.updated === false;
-            var p;
-            if (!isNew) {
-              p = Promise.resolve();
-            } else if (!liff.isInClient()) {
-              msgEl.textContent += '\n（LINEの外で開いているため、トークへのあいさつは送っていません）';
-              p = Promise.resolve();
-            } else {
-              p = liff.sendMessages([{ type:'text', text:'プロフィールを登録しました！' + displayName + 'です。よろしくお願いします☺' }])
-                .catch(function(e){
-                  msgEl.textContent += '\n⚠️ トークへのあいさつの送信に失敗：' + (e && (e.message || e.code) || e);
-                  return 'failed';
-                });
-            }
-            p.then(function(r){ if (r !== 'failed') setTimeout(function(){ if (liff.isInClient()) liff.closeWindow(); }, 1200); });
-          } else {
-            btn.disabled = false;
-            document.getElementById('msg').textContent = '⚠️ 保存に失敗：' + (res && res.error);
-          }
-        })
-        .catch(function(e){ btn.disabled = false; document.getElementById('msg').textContent = '⚠️ 保存に失敗：' + e; });
+      const msgEl = document.getElementById('msg');
+      msgEl.textContent = '保存中…';
+      // 新規登録のときだけ、本人の発言としてトークにあいさつを送る（運営のチャット一覧に現れ、個別に連絡できるようになる）。
+      // 画面を開いたときの問い合わせで「登録なし」と分かっていれば保存より先に送り、トークが「本人の発言 → 運営からの案内」の順に並ぶようにする。
+      // 分からなければ保存後に送る（案内が先になるが、登録は必ず進む）。LIFF のスコープ chat_message.write が必要。
+      const helloText = 'プロフィールを登録しました！登録名は「' + displayName + '」です。よろしくお願いします☺';
+      let helloSent = false, helloNote = '';
+      function sendHello(){
+        if (!liff.isInClient()) { helloNote = '\n（LINEの外で開いているため、トークへのあいさつは送っていません）'; return Promise.resolve(); }
+        return liff.sendMessages([{ type:'text', text: helloText }])
+          .then(function(){ helloSent = true; })
+          .catch(function(e){ helloNote = '\n⚠️ トークへのあいさつの送信に失敗：' + (e && (e.message || e.code) || e); });
+      }
+      const pre = (serverProfile === 'none' && !helloSent) ? sendHello() : Promise.resolve();
+      pre.then(function(){
+        return callApi({ action:'saveProfile', userId: userId, displayName: displayName,
+                         level: levelEl.value, category: catEl.value, transport: transEl.value });
+      }).then(function(res){
+        if (res && res.ok) {
+          cacheSet('profile_'+userId, { displayName:displayName, level:levelEl.value, category:catEl.value, transport:transEl.value });
+          const isNew = res.data && res.data.updated === false;
+          const post = (isNew && !helloSent && !helloNote) ? sendHello() : Promise.resolve();
+          return post.then(function(){
+            msgEl.textContent = '✅ 登録しました！この画面は閉じてOKです。' + helloNote;
+            if (helloNote.indexOf('⚠️') < 0) setTimeout(function(){ if (liff.isInClient()) liff.closeWindow(); }, 1200);
+          });
+        } else {
+          btn.disabled = false;
+          msgEl.textContent = '⚠️ 保存に失敗：' + (res && res.error);
+        }
+      }).catch(function(e){ btn.disabled = false; msgEl.textContent = '⚠️ 保存に失敗：' + e; });
     });
 
     main();
