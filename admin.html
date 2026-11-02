@@ -245,11 +245,22 @@
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
 
   let cbSeq = 0;
+  // 出席票（attendance.html）と同じ待ち方：GASの応答は数秒〜20秒超までばらつくので25秒待つ。
+  // やり直すのは「通信エラー」（<script> の読み込みが中断された即エラー）のときだけ、
+  // かつ読み取り系（adminInit／adminGet…）に限る。送信・保存・削除は二重実行を避けるため対象外。
+  const TIMEOUT_MS = 25000;
+  function canRetry(action){ return action === 'adminInit' || /^adminGet/.test(action); }
   function callApi(params){
+    return callOnce(params).catch(function(e){
+      if(e !== '通信エラー' || !canRetry(params.action)) throw e;
+      return callOnce(params);   // 1回だけやり直す
+    });
+  }
+  function callOnce(params){
     return new Promise(function(resolve, reject){
       const cbName = 'jcb_' + (cbSeq++);
       let s;
-      const to = setTimeout(function(){ cleanup(); reject('タイムアウト'); }, 20000);
+      const to = setTimeout(function(){ cleanup(); reject('タイムアウト'); }, TIMEOUT_MS);
       function cleanup(){ try{ delete window[cbName]; }catch(e){} if(s&&s.parentNode) s.parentNode.removeChild(s); clearTimeout(to); }
       window[cbName] = function(res){ cleanup(); resolve(res); };
       params.callback = cbName;
@@ -956,12 +967,29 @@
   });
 
   async function main(){
+    // 10秒たったら「読み込み中…」の文字だけ変える（出席票と同じ。ボタンは出さない）
+    const slowTimer = setTimeout(function(){
+      const m = document.querySelector('#loading .loadmsg');
+      if(m) m.innerHTML = '通信が混み合っています。<br>もう少しお待ちください…';
+    }, 10000);
     try {
       await liff.init({ liffId: LIFF_ID });
       if(!liff.isLoggedIn()){ liff.login(); return; }
-      const profile = await liff.getProfile();
+      let profile;
+      try {
+        profile = await liff.getProfile();
+      } catch(e){
+        // 外部ブラウザで開いたときはログイン情報に期限があり、liff.isLoggedIn() は期限切れを見ない。
+        // 期限切れだとここで失敗するので、エラー画面を出さずに古いログイン情報を捨ててログインへ進める。
+        clearTimeout(slowTimer);
+        el('loading').textContent = 'LINEのログインが必要です。ログイン画面に移動します…';
+        try{ liff.logout(); }catch(e2){}
+        liff.login();
+        return;
+      }
       userId = profile.userId;
       const res = await callApi({ action:'adminInit', userId:userId });
+      clearTimeout(slowTimer);
       el('loading').style.display='none';
       if(res && res.ok && res.data && res.data.isAdmin){
         el('app').style.display='block';
@@ -970,7 +998,7 @@
         el('myId').textContent = userId;
         el('denied').style.display='block';
       }
-    } catch(err){ el('loading').textContent = '初期化エラー：' + err; }
+    } catch(err){ clearTimeout(slowTimer); el('loading').textContent = '初期化エラー：' + err; }
   }
   main();
 </script>
