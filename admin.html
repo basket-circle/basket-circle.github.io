@@ -115,6 +115,13 @@
     </div>
     <div id="pane-contact" class="pane">
       <div class="card">
+        <div style="font-weight:bold;margin-bottom:6px;">メッセージを送る</div>
+        <textarea id="bcText" rows="4" style="width:100%;box-sizing:border-box;padding:10px;font-size:16px;border:1px solid #ccc;border-radius:8px;" placeholder="全員に送るメッセージを入力"></textarea>
+        <button class="act solid" id="btnBroadcast" style="margin-top:10px;">全員に送信</button>
+        <div class="mini" style="margin-top:6px;">※公式アカウントの友だち全員に届きます。画像・動画は送れません（リンクは本文にURLを書けばOK）。</div>
+        <div class="msg" id="bcMsg"></div>
+      </div>
+      <div class="card">
         <div style="font-weight:bold;margin-bottom:6px;">出欠カードを送る</div>
         <label class="f">対象の活動</label>
         <select id="contactEventSel"></select>
@@ -132,13 +139,6 @@
         <button class="act danger" id="btnCancelNotice" style="margin-top:12px;">⚠️ 中止のお知らせを送る</button>
         <div class="msg" id="cancelMsg"></div>
         <div class="mini" style="margin-top:6px;">※全員に届きます。送信後、この活動は自動で非公開になります。</div>
-      </div>
-      <div class="card">
-        <div style="font-weight:bold;margin-bottom:6px;">メッセージを送る</div>
-        <textarea id="bcText" rows="4" style="width:100%;box-sizing:border-box;padding:10px;font-size:16px;border:1px solid #ccc;border-radius:8px;" placeholder="全員に送るメッセージを入力"></textarea>
-        <button class="act solid" id="btnBroadcast" style="margin-top:10px;">全員に送信</button>
-        <div class="mini" style="margin-top:6px;">※公式アカウントの友だち全員に届きます。画像・動画は送れません（リンクは本文にURLを書けばOK）。</div>
-        <div class="msg" id="bcMsg"></div>
       </div>
       <div class="card">
         <div style="font-weight:bold;margin-bottom:6px;">管理者不在モード</div>
@@ -175,7 +175,7 @@
       </div>
 
       <div class="card" id="docDaysCard" style="display:none;">
-        <div style="font-weight:bold;margin-bottom:6px;" id="docDaysTitle">使用日と扇風機の台数</div>
+        <div style="font-weight:bold;margin-bottom:6px;" id="docDaysTitle">使用日</div>
         <div class="mini" id="docDaysNote" style="margin-bottom:6px;display:none;"></div>
         <div id="docDays"></div>
         <div class="mini" id="docSkipped" style="margin-top:10px;"></div>
@@ -628,11 +628,9 @@
       const LH = R['照明時間'];
       right(String(Math.floor(mins/60)), LH.size, LH['時の右端'], LH.y);
       right(String(mins%60), LH.size, LH['分'].x2, LH.y);
-      const N = R['備考'];
-      if(Number(day.fans)>0) right(String(Number(day.fans)), N.size, N['台数'].x2, N.y);
-      else erase(N);
     });
-    for(let i=data.days.length;i<rows.length;i++) erase(rows[i]['備考']);
+    // 備考は書かない（様式に印刷済みの「扇風機　　台使用」を全行とも白で隠す）
+    rows.forEach(function(r){ erase(r['備考']); });
 
     return await pdf.save();
   }
@@ -853,7 +851,6 @@
 
   el('btnDocLoad').addEventListener('click', function(){
     if(docKind()==='plan'){ loadPlanDays(this); return; }
-    el('docDaysTitle').textContent = '使用日と扇風機の台数';
     el('docDaysNote').style.display = 'none';
     const ym = el('docMonth').value;
     if(!ym){ alert('対象月を選んでください'); return; }
@@ -877,9 +874,7 @@
         el('docDays').innerHTML = docDays.map(function(d,i){
           return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0;">'+
             '<div style="flex:1;"><div style="font-weight:bold;font-size:14px;">'+escapeHtml(d.dateLabel||d.dateIso)+'</div>'+
-            '<div class="mini">'+escapeHtml(d.start)+'〜'+escapeHtml(d.end)+'　'+escapeHtml(d.kind)+'</div></div>'+
-            '<div style="width:88px;"><input type="number" id="fans-'+i+'" min="0" max="9" value="0" style="text-align:center;"></div>'+
-            '<div class="mini">台</div></div>';
+            '<div class="mini">'+escapeHtml(d.start)+'〜'+escapeHtml(d.end)+'　'+escapeHtml(d.kind)+'</div></div></div>';
         }).join('');
         el('docSkipped').innerHTML = skipped.length
           ? '対象外：'+skipped.map(function(s){ return escapeHtml(s.dateIso)+'（'+escapeHtml(s.reason)+'）'; }).join('、')
@@ -933,8 +928,8 @@
     if(!ym || !submit || !no || !pdate){ alert('対象月・提出日・許可番号・許可年月日をすべて入れてください'); return; }
     if(!docDays.length){ alert('対象の使用日がありません'); return; }
     if(docDays.length > 7){ alert('様式は7日分までです。別紙での対応が必要です。'); return; }
-    const days = docDays.map(function(d,i){
-      return { date:d.dateIso, start:d.start, end:d.end, fans: Number(el('fans-'+i).value) || 0 };
+    const days = docDays.map(function(d){
+      return { date:d.dateIso, start:d.start, end:d.end };
     });
     btn.disabled = true; el('docOutLink').innerHTML = '';
     try {
