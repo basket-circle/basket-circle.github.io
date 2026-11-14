@@ -3,61 +3,60 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>サークル出欠アプリのしくみ</title>
-<meta name="description" content="LINE公式アカウント＋LIFF＋Google Apps Script＋スプレッドシートで作った、社会人バスケサークル向け出欠管理アプリの構成と画面の説明。">
+<title>サークル出欠アプリの紹介</title>
+<meta name="description" content="LINE だけで使える社会人バスケサークルの出欠管理アプリ。画面の紹介と、裏側のしくみ（LINE・GitHub Pages・Google Apps Script・スプレッドシート）。">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#06c755">
 <style>
- :root{
-  --bg:#f5f6f8; --card:#fff; --ink:#24292f; --sub:#6b7280; --line:#e5e7eb;
-  --accent:#06c755; --accent-ink:#047a36; --blue:#1a73e8; --code:#f1f3f5;
- }
+ :root{--bg:#f5f6f8;--card:#fff;--ink:#24292f;--sub:#6b7280;--line:#e5e7eb;--accent:#06c755;--accent-ink:#047a36;--blue:#1a73e8;--code:#f1f3f5}
  *{box-sizing:border-box}
  html{scroll-behavior:smooth}
- body{margin:0;padding:0 16px 56px;background:var(--bg);color:var(--ink);
-  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;
-  font-size:15px;line-height:1.8;-webkit-text-size-adjust:100%}
- .wrap{max-width:860px;margin:0 auto}
+ body{margin:0;padding:0 16px 56px;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;font-size:15px;line-height:1.8;-webkit-text-size-adjust:100%}
+ .wrap{max-width:900px;margin:0 auto}
  header{padding:36px 0 8px}
- header h1{font-size:26px;margin:0 0 6px;line-height:1.35}
- header p{margin:0;color:var(--sub);font-size:14px}
- nav.toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:18px 0 28px}
+ header h1{font-size:26px;margin:0 0 8px;line-height:1.35}
+ header p{margin:0 0 6px;font-size:15px}
+ header .note{font-size:13px;color:var(--sub)}
+ nav.toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:18px 0 30px}
  nav.toc ol{margin:0;padding-left:1.4em;columns:2;column-gap:28px}
  nav.toc li{break-inside:avoid;margin:2px 0}
  nav.toc a{color:var(--ink);text-decoration:none}
  nav.toc a:hover{color:var(--accent-ink);text-decoration:underline}
- section{margin:0 0 44px}
+ section{margin:0 0 46px}
  h2{font-size:21px;margin:0 0 14px;padding:6px 0 6px 12px;border-left:5px solid var(--accent);line-height:1.4}
- h3{font-size:16px;margin:26px 0 8px;color:var(--accent-ink)}
+ h3{font-size:17px;margin:28px 0 10px;color:var(--accent-ink)}
  p{margin:0 0 12px}
  ul,ol{margin:0 0 12px;padding-left:1.4em}
- li{margin:3px 0}
+ li{margin:4px 0}
  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:0 0 14px}
- .lead{font-size:16px}
  .note{font-size:13px;color:var(--sub)}
- code{font-family:ui-monospace,Consolas,"SFMono-Regular",Menlo,monospace;font-size:.9em;background:var(--code);padding:1px 6px;border-radius:5px}
- pre{background:#1f2937;color:#e5e7eb;border-radius:10px;padding:14px 16px;overflow:auto;font-size:13px;line-height:1.6;margin:0 0 14px}
- pre code{background:none;color:inherit;padding:0;font-size:inherit}
+ code{font-family:ui-monospace,Consolas,Menlo,monospace;font-size:.9em;background:var(--code);padding:1px 6px;border-radius:5px}
  table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 14px;background:var(--card)}
  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
  th{background:#eef7f1;font-weight:600;white-space:nowrap}
  td.c{white-space:nowrap}
  .tbl{overflow-x:auto;margin:0 0 14px}
- .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:12px 0 6px}
- figure{margin:0}
- figure img{width:100%;height:auto;display:block;border-radius:14px;border:1px solid #d9dce1;box-shadow:0 2px 10px rgba(0,0,0,.08);background:#fff}
- figcaption{font-size:13px;color:var(--sub);margin-top:8px;line-height:1.6}
+ /* 画面紹介：左に画像、右に説明 */
+ .screen{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin:0 0 16px}
+ .screen.two{grid-template-columns:260px 260px 1fr}
+ .screen figure{margin:0}
+ .screen img{width:100%;height:auto;display:block;border-radius:14px;border:1px solid #d9dce1;box-shadow:0 2px 10px rgba(0,0,0,.08);background:#fff}
+ .screen figcaption{font-size:12.5px;color:var(--sub);margin-top:6px;line-height:1.5;text-align:center}
+ .screen .txt h4{margin:0 0 8px;font-size:16px}
+ .screen .txt ul{margin:0 0 10px}
+ .screen .txt p:last-child,.screen .txt ul:last-child{margin-bottom:0}
  .pill{display:inline-block;color:#fff;font-size:12px;font-weight:700;padding:1px 8px;border-radius:9px;margin:0 2px;vertical-align:middle;line-height:1.6}
- .kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:14px;margin:0 0 12px}
- .kv dt{color:var(--sub);white-space:nowrap}
- .kv dd{margin:0}
  .flow{counter-reset:s;list-style:none;padding:0;margin:0 0 12px}
  .flow li{position:relative;padding:0 0 0 38px;margin:0 0 10px}
  .flow li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:3px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
  .diagram{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin:0 0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
  .diagram svg{width:100%;min-width:720px;height:auto;display:block}
- .warn{background:#fff8e1;border:1px solid #ffe0a3;border-radius:10px;padding:10px 14px;font-size:14px;margin:0 0 14px}
  footer{color:#9ca3af;font-size:12px;text-align:center;margin-top:40px}
+ @media (max-width:760px){
+  .screen,.screen.two{grid-template-columns:1fr}
+  .screen figure{max-width:300px;margin:0 auto}
+  .screen.two .shots2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+ }
  @media (max-width:600px){
   header h1{font-size:22px}
   nav.toc ol{columns:1}
@@ -70,441 +69,440 @@
 <div class="wrap">
 
 <header>
- <h1>🏀 サークル出欠アプリのしくみ</h1>
- <p>LINE公式アカウント ＋ LIFF ＋ Google Apps Script ＋ スプレッドシートで動く、社会人バスケサークル向けの出欠管理アプリ。<br>
- 画面キャプチャの名前・サークル名はすべて架空のものに置き換えています。運営側の管理画面（運営コンソール）はこの資料では扱いません。</p>
+ <h1>🏀 サークル出欠アプリの紹介</h1>
+ <p>社会人バスケサークルの「今週、誰が来るか」を LINE だけで記入・確認できるようにした自作アプリです。前半で画面と使い方を、後半で裏側のしくみ（使っている言語・サービス・データの持ち方）を紹介します。</p>
+ <p class="note">画面写真に写っている名前・サークル名・会場名はすべて架空のものに差し替えています。運営者だけが使う管理画面は、この資料では扱いません。</p>
 </header>
 
 <nav class="toc">
  <ol>
-  <li><a href="#about">何をするアプリか</a></li>
-  <li><a href="#arch">全体の構成</a></li>
-  <li><a href="#screens">メンバーから見た姿</a></li>
-  <li><a href="#data">データの持ち方（スプレッドシート）</a></li>
-  <li><a href="#api">画面とサーバのやり取り（API）</a></li>
-  <li><a href="#auto">自動配信のルール</a></li>
-  <li><a href="#rules">集計と表示のルール</a></li>
-  <li><a href="#speed">速さと安定のための工夫</a></li>
-  <li><a href="#tradeoff">設計上の割り切り</a></li>
-  <li><a href="#files">ファイル構成と反映の手順</a></li>
+  <li><a href="#screens">画面と使い方</a></li>
+  <li><a href="#overview">しくみの全体像</a></li>
+  <li><a href="#stack">使っている言語・サービス・ツール</a></li>
+  <li><a href="#data">データの持ち方</a></li>
+  <li><a href="#api">画面とサーバのやり取り</a></li>
+  <li><a href="#auto">自動配信の決まり</a></li>
+  <li><a href="#rules">人数の数え方と見せ方の決まり</a></li>
+  <li><a href="#speed">遅さ・不安定さへの対策</a></li>
+  <li><a href="#policy">あえてそうしていること</a></li>
+  <li><a href="#files">ファイルと公開のしかた</a></li>
  </ol>
 </nav>
 
 <!-- ============================================================ -->
-<section id="about">
- <h2>1. 何をするアプリか</h2>
- <p class="lead">毎週の活動の「誰が来るか」を、メンバーが普段の LINE だけで記入・確認できるようにしたもの。新しいアプリのインストールは不要で、入口はすべて LINE 公式アカウントのメニューです。</p>
- <div class="card">
-  <ul>
-   <li><b>出席票</b>：活動日ごとに「参加／検討中／不参加／自由練習」をワンタップで記入。参加者の顔ぶれが、レベル・区分・交通手段のバッジ付きで見える。</li>
-   <li><b>プロフィール</b>：表示名・レベル・区分・交通手段を最初の1回だけ登録。以後は出席票に自動で反映される。</li>
-   <li><b>今後の予定</b>：公開中の活動を一覧で確認する読み取り専用ページ。</li>
-   <li><b>自動配信</b>：活動の6日前を基本に「次回の活動のお知らせ」、3日前に「出欠カード」が公式アカウントから届く。</li>
-   <li><b>チャット</b>：LINE のオープンチャット（開発物ではない）。メニューからリンクしているだけ。</li>
-  </ul>
+<section id="screens">
+ <h2>1. 画面と使い方</h2>
+ <p>メンバーが触るのは、LINE 公式アカウントのトーク画面と、そこから開く3つの画面（出席票・プロフィール登録・今後の予定）だけです。新しくアプリを入れる必要はありません。</p>
+
+ <h3>1-1. 入口は LINE 公式アカウント</h3>
+ <div class="screen">
+  <figure>
+   <img src="img/app/talk-normal.jpg" alt="公式アカウントのトーク画面。次回の活動のお知らせと、下部に4分割のメニュー" width="540" height="1200" loading="lazy">
+   <figcaption>公式アカウントのトーク画面</figcaption>
+  </figure>
+  <div class="txt">
+   <h4>下のメニューがすべての入口</h4>
+   <ul>
+    <li><b>出席票</b>：活動日ごとに出欠を記入し、参加者の顔ぶれを見る</li>
+    <li><b>今後の予定</b>：先の活動日を一覧で見る</li>
+    <li><b>プロフィール</b>：表示名やレベルを登録する（最初の1回だけ）</li>
+    <li><b>チャット</b>：メンバー同士のグループ（LINE のオープンチャット）を開く</li>
+   </ul>
+   <p>出席票・予定・プロフィールの3つは、LINE の中で開く Web 画面（LIFF）です。チャットは LINE 標準の機能にリンクしているだけで、こちらで作ったものではありません。</p>
+   <p>トークには、活動が近づくと「次回の活動のお知らせ」と「出欠カード」が自動で届きます（1-4 で説明）。写真の上端に見えているのは、中止のお知らせの末尾です。</p>
+  </div>
  </div>
- <h3>設計の軸</h3>
- <ul>
-  <li><b>メンバーの手軽さが最優先。</b>出欠の記入は LINE 内で完結し、プロフィールは1回きり。</li>
-  <li><b>不参加は表に出さない。</b>他のメンバーに見えるのは「参加」「検討中」「自由練習」の顔ぶれだけ。</li>
-  <li><b>登録していなくても回答できる。</b>未登録の人は「未登録」バッジで表示され、登録は促すだけでブロックしない。</li>
-  <li><b>表示名は本名でなくてよく、年齢欄はない。</b></li>
-  <li><b>データはスプレッドシートに置く。</b>運営者が代わってもシートを見れば直せる状態を保つ。</li>
-  <li><b>サーバ費用は0円。</b>GitHub Pages、Google Apps Script、スプレッドシートの無料枠だけで動いている。</li>
- </ul>
+
+ <h3>1-2. 出席票</h3>
+ <div class="screen two">
+  <div class="shots2" style="display:contents">
+   <figure>
+    <img src="img/app/attend-match.jpg" alt="出席票。練習試合の回に11人の参加者がバッジ付きで並び、下に参加・検討中・不参加のボタン" width="540" height="1200" loading="lazy">
+    <figcaption>練習試合の回。開催ラインに届いてバーが満タン</figcaption>
+   </figure>
+   <figure>
+    <img src="img/app/attend-normal.jpg" alt="出席票。通常活動の回が2枚並び、参加・検討中・不参加の下に自由練習のボタンがある" width="540" height="1200" loading="lazy">
+    <figcaption>通常活動の回。「あと4人で開催ライン」</figcaption>
+   </figure>
+  </div>
+  <div class="txt">
+   <h4>活動日ごとに1枚のカード</h4>
+   <ul>
+    <li>日付、種別（通常活動／練習試合／イベント）、時間と会場。練習試合なら相手チーム名が青字で入る</li>
+    <li><b>参加人数と開催ライン</b>（この人数が集まれば開催、の目安）と進捗バー</li>
+    <li>参加者の名簿。1人ずつ <span class="pill" style="background:#06c755">経験</span><span class="pill" style="background:#f0a020">ブランク</span><span class="pill" style="background:#3b9cff">初心</span> のレベル、<span class="pill" style="background:#ef6c9a">高校</span><span class="pill" style="background:#9575cd">大学</span><span class="pill" style="background:#4db6ac">社会人</span> の区分、<span class="pill" style="background:#7e8aa0">🚗車</span><span class="pill" style="background:#7e8aa0">🚃草津</span> などの交通手段が付く</li>
+    <li>検討中の人の名簿。隣のコートで自由練習をする人がいれば、その名簿も別枠で</li>
+   </ul>
+   <h4>ボタンひとつで回答</h4>
+   <ul>
+    <li><b>◯参加／△検討中／×不参加</b> を押すだけ。押した瞬間に名簿と人数が書き換わる</li>
+    <li>通常活動とイベントの日は <b>🏀 自由練習（隣のコート）</b> も選べる。これは本体の人数には数えない</li>
+    <li><b>不参加は他の人には見えない</b>。名簿に載るのは参加・検討中・自由練習だけで、不参加は右下の「あなたの回答」にだけ出る</li>
+    <li><b>＋ 体験者・同伴を追加</b>：LINE を持っていない人（体験に来る友人、親子参加のお子さんなど）を、連れてくる人が代わりに名簿へ入れられる。人数にも数える。消せるのは追加した本人だけ</li>
+    <li>プロフィールを登録していない人も回答できる。名簿には「未登録」の灰色バッジで載り、画面の上に登録のお願いが出るだけ</li>
+   </ul>
+  </div>
+ </div>
+
+ <h3>1-3. プロフィール登録</h3>
+ <div class="screen">
+  <figure>
+   <img src="img/app/profile.jpg" alt="プロフィール登録画面。表示名、バスケのレベル、区分、交通手段を選ぶ" width="540" height="1200" loading="lazy">
+   <figcaption>プロフィール登録</figcaption>
+  </figure>
+  <div class="txt">
+   <h4>最初の1回だけ</h4>
+   <ul>
+    <li><b>表示名</b>（本名でなくてよい）、<b>レベル</b>（経験者／ブランク勢／初心者）、<b>区分</b>（高校生／大学生／社会人）、<b>交通手段</b>（電車2方面／車／自転車／徒歩）の4つ。年齢は聞かない</li>
+    <li>表示名には LINE の名前が最初から入っている。登録済みなら前回の内容が入った状態で開くので、直したいところだけ変えればよい</li>
+    <li>ここで登録した内容が、出席票と出欠カードのバッジになる</li>
+   </ul>
+   <h4>はじめて登録したときだけ起きること</h4>
+   <ul>
+    <li>本人の発言として「プロフィールを登録しました！登録名は「◯◯」です。よろしくお願いします☺」がトークに送られる。運営側のチャット一覧に本人が現れるので、個別に連絡できるようになる</li>
+    <li>画面が閉じてトークに戻ると、「💬 最後のお願い」というカード（グループLINE に参加するボタン付き）が届く</li>
+   </ul>
+  </div>
+ </div>
+
+ <h3>1-4. 自動で届くお知らせと出欠カード</h3>
+ <div class="screen two">
+  <div class="shots2" style="display:contents">
+   <figure>
+    <img src="img/app/talk-event.jpg" alt="イベントの回のお知らせカード。会場の横に［イベント］、名称が青い太字" width="540" height="1200" loading="lazy">
+    <figcaption>次回の活動のお知らせ（イベントの回）</figcaption>
+   </figure>
+   <figure>
+    <img src="img/app/card.jpg" alt="出欠カード。参加人数と開催ライン、参加者の名簿、隣のコートの自由練習の名簿" width="540" height="1200" loading="lazy">
+    <figcaption>出欠カード（活動の3日前）</figcaption>
+   </figure>
+  </div>
+  <div class="txt">
+   <h4>次回の活動のお知らせ（6日前が基本）</h4>
+   <ul>
+    <li>日時、会場、通常活動以外なら［練習試合］［イベント］の種別、名称があれば青の太字で</li>
+    <li>「出席したい人は、早めに出欠の記入をお願いします😊」と、出席票を開くボタン</li>
+   </ul>
+   <h4>出欠カード（3日前）</h4>
+   <ul>
+    <li>その時点の参加人数と開催ライン、◯参加と△検討中の名簿、隣のコートの自由練習の名簿。バッジは出席票と同じ</li>
+    <li>締切（活動の2日前）までは「まだの人は M/d(曜)までに、回答済みの人も変更があればお願いします🙏」の一文が付く</li>
+    <li>ボタンは出席票を開くものが1つだけ。回答は出席票で行う</li>
+   </ul>
+   <h4>中止のお知らせ（運営が送る）</h4>
+   <ul>
+    <li>「⚠️【中止のお知らせ】M/d(曜)　HH:mm〜HH:mm の活動は中止です🙏」に、運営が書いた理由が1行付く</li>
+    <li>中止したのが次回の活動なら「また次回、よろしくお願いします😊」、隣のコートの自由練習に人がいれば「※隣のコートの自由練習も、あわせて中止です。」が自動で付く</li>
+   </ul>
+   <p class="note">お知らせ・カードは LINE の「Flex Message」というカード型のメッセージです。静止画ではないので、文字がそのまま読めてボタンも押せます。</p>
+  </div>
+ </div>
+
+ <h3>1-5. 今後の予定</h3>
+ <div class="card">
+  <p>公開中の活動を上から順に並べた、見るだけのページです。各行に日付、種別（お休みも含む）、名称、時間と会場、◯参加と△検討中の名前、自由練習の名前が出ます。お休みの回は日付と種別だけです。出席票と同じデータを、バッジを付けずに短くまとめた形です。</p>
+ </div>
+
+ <h3>1-6. はじめて友だち追加したときの流れ</h3>
+ <div class="card">
+  <ol class="flow" style="margin:0">
+   <li>公式アカウントを友だち追加すると、「◯◯さん、はじめまして。友達登録ありがとうございます☺／まずは、プロフィールの登録をお願いします。最初の1回だけです。」と、登録画面を開くボタンが届く。以前に登録したことがある人には「おかえりなさい☺」だけが返る。</li>
+   <li>ボタンからプロフィールを登録する。本人の発言が送られ、「💬 最後のお願い」カードが届く。</li>
+   <li>カードのボタンからグループLINE に参加して、準備は終わり。</li>
+  </ol>
+  <p class="note" style="margin:10px 0 0">普段のメッセージには自動では返事をしません（運営が手で返します）。運営が「管理者不在モード」を ON にしている間だけ、不在の案内とチャットへのボタンを自動で返します。</p>
+ </div>
 </section>
 
 <!-- ============================================================ -->
-<section id="arch">
- <h2>2. 全体の構成</h2>
+<section id="overview">
+ <h2>2. しくみの全体像</h2>
  <div class="diagram" aria-label="構成図">
   <svg viewBox="0 0 860 560" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,'Hiragino Kaku Gothic ProN','Yu Gothic UI',Meiryo,sans-serif" font-size="14">
    <defs>
-    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-     <path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/>
-    </marker>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/></marker>
    </defs>
-   <!-- メンバーのLINE -->
    <rect x="20" y="20" width="250" height="520" rx="14" fill="#f0fff6" stroke="#06c755" stroke-width="2"/>
    <text x="145" y="48" text-anchor="middle" font-weight="700" font-size="16" fill="#047a36">📱 メンバーの LINE</text>
    <rect x="40" y="70" width="210" height="96" rx="10" fill="#fff" stroke="#c9e9d6"/>
    <text x="145" y="96" text-anchor="middle" font-weight="700">トーク</text>
    <text x="145" y="118" text-anchor="middle" fill="#6b7280" font-size="12.5">活動のお知らせ・出欠カード</text>
-   <text x="145" y="136" text-anchor="middle" fill="#6b7280" font-size="12.5">中止のお知らせ（Flexメッセージ）</text>
+   <text x="145" y="136" text-anchor="middle" fill="#6b7280" font-size="12.5">中止のお知らせ</text>
    <text x="145" y="154" text-anchor="middle" fill="#6b7280" font-size="12.5">友だち追加時の案内</text>
    <rect x="40" y="186" width="210" height="76" rx="10" fill="#fff" stroke="#c9e9d6"/>
    <text x="145" y="212" text-anchor="middle" font-weight="700">リッチメニュー</text>
    <text x="145" y="234" text-anchor="middle" fill="#6b7280" font-size="12.5">出席票／今後の予定</text>
    <text x="145" y="252" text-anchor="middle" fill="#6b7280" font-size="12.5">プロフィール／チャット</text>
    <rect x="40" y="282" width="210" height="116" rx="10" fill="#fff" stroke="#c9e9d6"/>
-   <text x="145" y="308" text-anchor="middle" font-weight="700">LIFF 画面</text>
-   <text x="145" y="328" text-anchor="middle" fill="#6b7280" font-size="12.5">（LINE 内ブラウザ）</text>
-   <text x="145" y="350" text-anchor="middle" fill="#6b7280" font-size="12.5">attendance.html</text>
-   <text x="145" y="368" text-anchor="middle" fill="#6b7280" font-size="12.5">schedule.html</text>
-   <text x="145" y="386" text-anchor="middle" fill="#6b7280" font-size="12.5">profile.html</text>
+   <text x="145" y="308" text-anchor="middle" font-weight="700">LINE の中で開く Web 画面</text>
+   <text x="145" y="328" text-anchor="middle" fill="#6b7280" font-size="12.5">（LIFF）</text>
+   <text x="145" y="350" text-anchor="middle" fill="#6b7280" font-size="12.5">出席票</text>
+   <text x="145" y="368" text-anchor="middle" fill="#6b7280" font-size="12.5">今後の予定</text>
+   <text x="145" y="386" text-anchor="middle" fill="#6b7280" font-size="12.5">プロフィール登録</text>
    <rect x="40" y="418" width="210" height="56" rx="10" fill="#fff" stroke="#c9e9d6"/>
    <text x="145" y="442" text-anchor="middle" font-weight="700">オープンチャット</text>
    <text x="145" y="462" text-anchor="middle" fill="#6b7280" font-size="12.5">メンバー同士の連絡（LINE 標準機能）</text>
-   <text x="145" y="518" text-anchor="middle" fill="#6b7280" font-size="12">メンバーがインストールするものは無い</text>
+   <text x="145" y="518" text-anchor="middle" fill="#6b7280" font-size="12">インストールするものは無い</text>
 
-   <!-- GitHub Pages -->
    <rect x="330" y="282" width="200" height="116" rx="12" fill="#fff" stroke="#9ca3af" stroke-width="1.5"/>
    <text x="430" y="310" text-anchor="middle" font-weight="700" font-size="15">GitHub Pages</text>
-   <text x="430" y="332" text-anchor="middle" fill="#6b7280" font-size="12.5">静的ホスティング</text>
-   <text x="430" y="354" text-anchor="middle" fill="#6b7280" font-size="12.5">HTML＋JS を配信するだけ</text>
-   <text x="430" y="372" text-anchor="middle" fill="#6b7280" font-size="12.5">（LIFF のエンドポイント）</text>
+   <text x="430" y="332" text-anchor="middle" fill="#6b7280" font-size="12.5">画面の置き場所</text>
+   <text x="430" y="354" text-anchor="middle" fill="#6b7280" font-size="12.5">HTML／CSS／JavaScript を</text>
+   <text x="430" y="372" text-anchor="middle" fill="#6b7280" font-size="12.5">配るだけの静的ホスティング</text>
 
-   <!-- LINE Platform -->
    <rect x="330" y="70" width="200" height="150" rx="12" fill="#fff" stroke="#9ca3af" stroke-width="1.5"/>
    <text x="430" y="98" text-anchor="middle" font-weight="700" font-size="15">LINE プラットフォーム</text>
    <text x="430" y="124" text-anchor="middle" fill="#6b7280" font-size="12.5">Messaging API</text>
-   <text x="430" y="142" text-anchor="middle" fill="#6b7280" font-size="12.5">broadcast / push / reply / Webhook</text>
+   <text x="430" y="142" text-anchor="middle" fill="#6b7280" font-size="12.5">メッセージ配信／Webhook</text>
    <text x="430" y="168" text-anchor="middle" fill="#6b7280" font-size="12.5">LIFF（LINE ログイン）</text>
-   <text x="430" y="186" text-anchor="middle" fill="#6b7280" font-size="12.5">userId・表示名の取得</text>
-   <text x="430" y="206" text-anchor="middle" fill="#6b7280" font-size="12.5">同一プロバイダーで userId 共通</text>
+   <text x="430" y="186" text-anchor="middle" fill="#6b7280" font-size="12.5">利用者の ID・表示名を渡す</text>
+   <text x="430" y="206" text-anchor="middle" fill="#6b7280" font-size="12.5">ID は配信側と共通</text>
 
-   <!-- GAS -->
    <rect x="590" y="70" width="250" height="230" rx="12" fill="#fff7ed" stroke="#f0a020" stroke-width="2"/>
    <text x="715" y="98" text-anchor="middle" font-weight="700" font-size="16" fill="#9a5b00">⚙️ Google Apps Script</text>
-   <text x="715" y="118" text-anchor="middle" fill="#6b7280" font-size="12.5">Web アプリとして公開（/exec）</text>
+   <text x="715" y="118" text-anchor="middle" fill="#6b7280" font-size="12.5">サーバ役（Web アプリとして公開）</text>
    <rect x="608" y="134" width="214" height="44" rx="8" fill="#fff" stroke="#fcd9a8"/>
-   <text x="715" y="152" text-anchor="middle" font-size="13" font-weight="700">doGet(action=…)</text>
-   <text x="715" y="169" text-anchor="middle" fill="#6b7280" font-size="12">画面向けの JSONP API</text>
+   <text x="715" y="152" text-anchor="middle" font-size="13" font-weight="700">画面向けの窓口</text>
+   <text x="715" y="169" text-anchor="middle" fill="#6b7280" font-size="12">出欠の読み書き・プロフィール</text>
    <rect x="608" y="186" width="214" height="44" rx="8" fill="#fff" stroke="#fcd9a8"/>
-   <text x="715" y="204" text-anchor="middle" font-size="13" font-weight="700">doPost</text>
-   <text x="715" y="221" text-anchor="middle" fill="#6b7280" font-size="12">LINE からの Webhook 受信</text>
+   <text x="715" y="204" text-anchor="middle" font-size="13" font-weight="700">LINE からの通知の受け口</text>
+   <text x="715" y="221" text-anchor="middle" fill="#6b7280" font-size="12">友だち追加・メッセージ受信</text>
    <rect x="608" y="238" width="214" height="52" rx="8" fill="#fff" stroke="#fcd9a8"/>
    <text x="715" y="256" text-anchor="middle" font-size="13" font-weight="700">時間トリガー</text>
-   <text x="715" y="273" text-anchor="middle" fill="#6b7280" font-size="12">毎朝9時台：自動配信</text>
-   <text x="715" y="286" text-anchor="middle" fill="#6b7280" font-size="12">5分ごと：キャッシュ更新</text>
+   <text x="715" y="273" text-anchor="middle" fill="#6b7280" font-size="12">毎朝9時台：お知らせ・カード配信</text>
+   <text x="715" y="286" text-anchor="middle" fill="#6b7280" font-size="12">5分ごと：読み取り用キャッシュ更新</text>
 
-   <!-- Spreadsheet -->
    <rect x="590" y="370" width="250" height="150" rx="12" fill="#eef6ff" stroke="#1a73e8" stroke-width="2"/>
    <text x="715" y="398" text-anchor="middle" font-weight="700" font-size="16" fill="#0b4fa8">📊 Google スプレッドシート</text>
    <text x="715" y="424" text-anchor="middle" fill="#374151" font-size="13">活動日　メンバー　出欠</text>
    <text x="715" y="446" text-anchor="middle" fill="#374151" font-size="13">ゲスト　友だち　管理者</text>
-   <text x="715" y="476" text-anchor="middle" fill="#6b7280" font-size="12.5">1行＝1レコード。人はすべて</text>
-   <text x="715" y="494" text-anchor="middle" fill="#6b7280" font-size="12.5">LINE の userId で識別する</text>
+   <text x="715" y="476" text-anchor="middle" fill="#6b7280" font-size="12.5">データベース代わり。</text>
+   <text x="715" y="494" text-anchor="middle" fill="#6b7280" font-size="12.5">1シート＝1つの表、1行＝1件</text>
 
-   <!-- edges -->
-   <!-- rich menu -> LIFF (inside phone) -->
    <path d="M145,262 L145,282" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ah)"/>
-   <!-- LIFF <- Pages (HTML) -->
    <path d="M330,340 L250,340" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ah)"/>
-   <text x="290" y="332" text-anchor="middle" font-size="11.5" fill="#374151">HTML</text>
-   <!-- LIFF -> LINE Platform (login) -->
+   <text x="290" y="332" text-anchor="middle" font-size="11.5" fill="#374151">画面</text>
    <path d="M250,300 C290,300 300,220 330,200" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
-   <text x="268" y="236" text-anchor="middle" font-size="11.5" fill="#374151">liff.init</text>
-   <!-- LIFF -> GAS (JSONP) -->
+   <text x="268" y="236" text-anchor="middle" font-size="11.5" fill="#374151">ログイン</text>
    <path d="M250,392 C330,462 540,462 622,308" stroke="#06c755" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-   <text x="440" y="486" text-anchor="middle" font-size="12" fill="#047a36" font-weight="700">JSONP（&lt;script&gt; タグで GET）</text>
-   <text x="440" y="503" text-anchor="middle" font-size="11.5" fill="#047a36">?action=getInit&amp;userId=…&amp;callback=…</text>
-   <!-- GAS <-> Sheet -->
+   <text x="440" y="486" text-anchor="middle" font-size="12" fill="#047a36" font-weight="700">画面からの問い合わせ（JSONP）</text>
+   <text x="440" y="503" text-anchor="middle" font-size="11.5" fill="#047a36">「操作名」と「利用者の ID」を付けて呼ぶ</text>
    <path d="M715,300 L715,370" stroke="#1a73e8" stroke-width="2" marker-end="url(#ah)" marker-start="url(#ah)"/>
    <text x="760" y="340" text-anchor="start" font-size="12" fill="#0b4fa8">読み書き</text>
-   <!-- GAS -> LINE API -> talk -->
    <path d="M590,120 L530,120" stroke="#f0a020" stroke-width="2" marker-end="url(#ah)"/>
    <text x="560" y="110" text-anchor="middle" font-size="11.5" fill="#9a5b00">配信</text>
    <path d="M330,120 L250,120" stroke="#f0a020" stroke-width="2" marker-end="url(#ah)"/>
-   <text x="290" y="110" text-anchor="middle" font-size="11.5" fill="#9a5b00">push/broadcast</text>
-   <!-- talk -> LINE -> GAS webhook -->
+   <text x="290" y="110" text-anchor="middle" font-size="11.5" fill="#9a5b00">全員に届く</text>
    <path d="M250,150 L330,150" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ah)"/>
    <text x="290" y="166" text-anchor="middle" font-size="11.5" fill="#374151">友だち追加</text>
    <path d="M530,200 L590,200" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ah)"/>
    <text x="560" y="216" text-anchor="middle" font-size="11.5" fill="#374151">Webhook</text>
   </svg>
  </div>
- <p class="note">矢印の向きはデータの流れ。緑＝画面からの問い合わせ、橙＝公式アカウントからの配信、青＝シートの読み書き。スマホでは図を横にスクロールできます。</p>
+ <p class="note">矢印はデータの流れ。緑＝画面からの問い合わせ、橙＝公式アカウントからの配信、青＝シートの読み書き。スマホでは図を横にスクロールできます。</p>
 
- <h3>ひとことで言うと</h3>
+ <h3>流れをまとめると</h3>
  <ol class="flow">
-  <li><b>画面は GitHub Pages の静的 HTML。</b>LIFF の仕組みで LINE 内ブラウザに開き、<code>liff.getProfile()</code> で LINE の userId を取る。</li>
-  <li><b>サーバは Google Apps Script（GAS）1本。</b>画面からは <code>?action=…</code> 付きの GET（JSONP）で呼び、LINE からは Webhook（POST）で呼ばれる。</li>
+  <li><b>画面は GitHub Pages に置いた静的な HTML。</b>LIFF のしくみで LINE の中に開き、LINE から利用者の ID と表示名を受け取る。</li>
+  <li><b>サーバ役は Google Apps Script（GAS）1本。</b>画面からは「操作名＋利用者 ID」付きの GET で呼ばれ、LINE からは Webhook（POST）で呼ばれる。</li>
   <li><b>データはスプレッドシート。</b>GAS がシートを読み書きし、必要なときに LINE の Messaging API で全員にメッセージを配る。</li>
-  <li><b>自動配信は GAS の時間トリガー。</b>毎朝1回、活動日シートを見て「お知らせ」「出欠カード」を送るか判定する。</li>
+  <li><b>自動配信は GAS の時間トリガー。</b>毎朝1回、活動日の一覧を見て「お知らせ」「出欠カード」を送るかどうか決める。</li>
  </ol>
- <p class="note">GAS の HtmlService は sandbox の iframe で動き LIFF の初期化が完了しないため、画面は GAS に置かず静的ホスティングに分けている。GAS 側は JSONP（<code>callback(…)</code> 形式の JavaScript）を返す。</p>
+ <p class="note">画面を GAS に置かず GitHub Pages に分けているのは、GAS の画面機能（HtmlService）が sandbox の iframe で動くため LIFF の初期化が終わらないからです。そのため画面と GAS の間は JSONP（JavaScript を <code>&lt;script&gt;</code> タグで読み込む形）で通信しています。</p>
 </section>
 
 <!-- ============================================================ -->
-<section id="screens">
- <h2>3. メンバーから見た姿</h2>
-
- <h3>3-1. 公式アカウントのトークと、自動で届くメッセージ</h3>
- <div class="shots">
-  <figure>
-   <img src="img/app/talk-normal.jpg" alt="公式アカウントのトーク画面。次回の活動のお知らせカードと、下部に4分割のリッチメニュー" width="540" height="1200" loading="lazy">
-   <figcaption><b>活動のお知らせ（通常活動）</b>と、下部のリッチメニュー（出席票／今後の予定／プロフィール／チャット）。上端に見えているのは中止のお知らせの末尾。</figcaption>
-  </figure>
-  <figure>
-   <img src="img/app/talk-event.jpg" alt="イベント種別の活動のお知らせカード。会場の横に［イベント］、名称が青い太字で表示されている" width="540" height="1200" loading="lazy">
-   <figcaption><b>活動のお知らせ（イベント）</b>。通常活動以外は会場の横に［種別］が付き、活動日シートの「名称」列に入力があれば青の太字で出る。</figcaption>
-  </figure>
-  <figure>
-   <img src="img/app/card.jpg" alt="出欠カード。参加人数と開催ライン、参加者の名簿がレベルと区分のバッジ付きで並ぶ" width="540" height="1200" loading="lazy">
-   <figcaption><b>出欠カード</b>（活動の3日前に届く）。参加 n／開催ライン m、◯参加と△検討中の名簿、隣のコートの自由練習（別集計）。ボタンは出席票を開く1つだけ。</figcaption>
-  </figure>
- </div>
- <div class="card">
-  <ul>
-   <li>メッセージはすべて LINE の <b>Flex Message</b>（JSON で組むカード型メッセージ）。GAS 側の <code>NotifyApp.js</code> が組み立てる。</li>
-   <li>全員に同じ内容を <b>broadcast API</b> で送るため、カードに個人の回答状況は載せない。締切（活動の2日前）までは「まだの人は M/d(曜)までに、回答済みの人も変更があればお願いします🙏」の共通文言が付き、締切を過ぎてから送った場合はこの行ごと消える。</li>
-   <li>名簿の各行は <span class="pill" style="background:#06c755">経験</span><span class="pill" style="background:#f0a020">ブランク</span><span class="pill" style="background:#3b9cff">初心</span><span class="pill" style="background:#999">未登録</span> のレベルと、<span class="pill" style="background:#ec407a">高校</span><span class="pill" style="background:#26a69a">大学</span><span class="pill" style="background:#5c6bc0">社会人</span> の区分を角丸バッジで示す。体験者・同伴は <span class="pill" style="background:#ff7043">体験</span><span class="pill" style="background:#8d6e63">同伴</span> が先頭に付き、2行目に「（◯◯さんの紹介）」「（◯◯さんの同伴）」が入る。</li>
-   <li>中止のお知らせはテキスト。「⚠️【中止のお知らせ】M/d(曜)　HH:mm〜HH:mm の活動は中止です🙏」＋運営が書いた理由（任意）。中止した回が次回の活動なら「また次回、よろしくお願いします😊」、隣のコートの自由練習に1人以上いれば「※隣のコートの自由練習も、あわせて中止です。」が自動で付く。</li>
-  </ul>
- </div>
-
- <h3>3-2. 出席票（attendance.html）</h3>
- <div class="shots">
-  <figure>
-   <img src="img/app/attend-match.jpg" alt="出席票の画面。練習試合の活動カードに11人の参加者がバッジ付きで並び、下に参加・検討中・不参加のボタン" width="540" height="1200" loading="lazy">
-   <figcaption><b>練習試合の回。</b>名称（対戦相手）が青の太字、開催ライン到達で進捗バーが満タン。名簿にはレベル・区分・交通手段の3つのバッジ。</figcaption>
-  </figure>
-  <figure>
-   <img src="img/app/attend-normal.jpg" alt="出席票の画面。通常活動のカードが2枚並び、参加・検討中・不参加のボタンの下に自由練習のボタンがある" width="540" height="1200" loading="lazy">
-   <figcaption><b>通常活動の回。</b>「あと4人で開催ライン」の表示と進捗バー。通常活動とイベントの日だけ「🏀 自由練習（隣のコート）」ボタンが出る。</figcaption>
-  </figure>
- </div>
- <div class="card">
-  <p>リッチメニューの「出席票」から開く LIFF 画面。公開中で今日以降の活動が日付順にカードで並ぶ。1枚のカードに入っているもの：</p>
-  <ul>
-   <li>日付、種別タグ（通常活動／練習試合／イベント）、名称（あれば）、時間と会場</li>
-   <li><b>参加 n ／ 開催ライン m</b>、「あと k 人で開催ライン」または「開催ライン到達！」、進捗バー</li>
-   <li>内訳：経験・ブランク・初心（・未登録）の人数。体験・同伴がいれば「（うち体験◯・同伴◯）」</li>
-   <li>◯参加 と △検討中 の名簿。隣のコートの自由練習は1人以上いるときだけ「※別集計」付きで表示</li>
-   <li>「＋ 体験者・同伴を追加」ボタン（後述）</li>
-   <li>回答ボタン <b>◯参加／△検討中／×不参加</b>。通常活動・イベントの日は <b>🏀 自由練習（隣のコート）</b> も</li>
-   <li>右下に「あなたの回答：参加」など自分の状態。<b>不参加は自分にだけ見え、名簿には出ない。</b></li>
-  </ul>
-  <p><b>ボタンを押した瞬間に画面を書き換え、サーバへの保存は裏で行う</b>（楽観的更新）。保存に失敗したときだけ警告を出して読み直す。送信中はその活動のボタンを無効化して連打を防ぐ。</p>
-  <p><b>体験者・同伴の代理登録</b>：「＋ 体験者・同伴を追加」で、種別（体験の方／家族・同伴）・名前・レベルを入力すると、LINE を持たない人を紹介者が代わりに名簿へ入れられる。人数と開催ラインに数え、削除できるのは追加した本人だけ（画面の✕表示とサーバ側の紹介者 ID 照合の二重チェック）。</p>
-  <p><b>プロフィール未登録の人</b>も回答できる。名簿には <span class="pill" style="background:#bbb">未登録</span> バッジで出て、画面上部に登録を促す黄色いバナーが出るだけ。</p>
- </div>
-
- <h3>3-3. プロフィール登録（profile.html）</h3>
- <div class="shots">
-  <figure>
-   <img src="img/app/profile.jpg" alt="プロフィール登録画面。表示名、バスケのレベル3択、区分3択、交通手段の選択肢" width="540" height="1200" loading="lazy">
-   <figcaption>表示名（本名でなくてOK）、レベル3択、区分3択、交通手段5択。年齢欄はない。</figcaption>
-  </figure>
-  <div>
-   <div class="card">
-    <ul>
-     <li>入力項目は <b>表示名／レベル（経験者・ブランク勢・初心者）／区分（高校生・大学生・社会人）／交通手段（電車 京都方面・電車 草津方面・車・自転車・徒歩）</b> の4つ。すべて必須。</li>
-     <li>表示名の初期値は LINE の表示名。登録済みなら前回の内容が入った状態で開く（端末の localStorage にも控えを置き、サーバ応答を待たずに表示）。</li>
-     <li>保存先はメンバーシート。userId で1行、再登録は同じ行を上書き。</li>
-     <li><b>新規登録のときだけ</b>、①本人の発言として「プロフィールを登録しました！登録名は「◯◯」です。よろしくお願いします☺」をトークに送る（<code>liff.sendMessages</code>。運営側のチャット一覧に本人が現れ、個別に連絡できるようになる）、②サーバに <code>sendWelcome</code> を依頼して0.5秒後に画面を閉じる。トークに戻ると「💬 最後のお願い」（グループLINE参加のボタン付きカード）が新着で届く。</li>
-    </ul>
-   </div>
-   <div class="card">
-    <p style="margin:0 0 6px"><b>友だち追加からの流れ</b></p>
-    <ol class="flow" style="margin:0">
-     <li>公式アカウントを友だち追加 → Webhook の follow イベントを GAS が受け、「◯◯さん、はじめまして。友達登録ありがとうございます☺／まずは、プロフィールの登録をお願いします。最初の1回だけです。」＋「👤 プロフィールを登録」ボタンを返す。登録済みの人の再追加には「おかえりなさい☺」だけ返す。</li>
-     <li>ボタンからプロフィール登録 → 上記の本人発言と「💬 最後のお願い」カード。</li>
-     <li>グループLINE（オープンチャット）に参加して準備完了。</li>
-    </ol>
-    <p class="note" style="margin:8px 0 0">普段のテキストメッセージには自動返信しない（運営が手動で返す）。運営側で「管理者不在モード」を ON にしている間だけ、不在の案内とチャットへのボタンを返す。</p>
-   </div>
-  </div>
- </div>
-
- <h3>3-4. 今後の予定（schedule.html）</h3>
- <div class="card">
-  <p>公開中の活動を上から順に並べる読み取り専用のページ。各行に日付、種別タグ（通常活動／練習試合／イベント／お休み）、名称、時間と会場、◯参加(n) と △検討中(n) の名前の列挙、自由練習がいれば 🏀自由練習(n)。お休みの回は日付と種別だけ。出席票と同じ API（<code>getBoard</code>）の結果を、バッジ無しの簡易表示にしている。</p>
- </div>
+<section id="stack">
+ <h2>3. 使っている言語・サービス・ツール</h2>
+ <div class="tbl"><table>
+  <tr><th>役割</th><th>使っているもの</th><th>言語・形式</th><th>補足</th></tr>
+  <tr><td>画面</td><td>GitHub Pages（静的ホスティング）</td><td>HTML／CSS／JavaScript</td><td>出席票・今後の予定・プロフィール登録の3ファイル。フレームワークやビルドは使わず、1ファイルで完結。LIFF SDK を読み込んで LINE と連携</td></tr>
+  <tr><td>サーバ</td><td>Google Apps Script</td><td>JavaScript（GAS）</td><td>Web アプリとして公開し、GET／POST を受ける。時間トリガーで定期実行もここ</td></tr>
+  <tr><td>データ</td><td>Google スプレッドシート</td><td>表（1シート＝1テーブル）</td><td>データベース代わり。人の手でも直せるのが利点</td></tr>
+  <tr><td>LINE との連携</td><td>Messaging API／LIFF／リッチメニュー／オープンチャット</td><td>Flex Message（JSON）</td><td>配信・Webhook は Messaging API、画面の表示と利用者の識別は LIFF。チャットはオープンチャットをそのまま利用</td></tr>
+  <tr><td>開発・反映</td><td>Git／GitHub、clasp（GAS のコードを PC から上げるツール）</td><td>—</td><td>画面は push で公開。GAS は push のあと「デプロイ」で新しい版を公開</td></tr>
+  <tr><td>費用</td><td colspan="3">サーバ代は0円。上のサービスはすべて無料枠の範囲で動いている</td></tr>
+ </table></div>
+ <p>利用者の識別は、すべて <b>LINE の userId</b>（1人に1つ振られる ID）で行います。画面を開くための LIFF と、メッセージを配る Messaging API が同じプロバイダーに属しているので、両方で同じ ID が使えます。登録・出欠・ゲストの紹介者は、この ID で結びついています。</p>
 </section>
 
 <!-- ============================================================ -->
 <section id="data">
- <h2>4. データの持ち方（スプレッドシート）</h2>
- <p>すべて1つのスプレッドシートに、シート＝テーブル、1行＝1レコードで置く。人の識別はすべて LINE の userId。運営がシートを直接編集しても動く（活動日は日付を入れるとイベント ID が自動採番される）。</p>
+ <h2>4. データの持ち方</h2>
+ <p>1つのスプレッドシートの中に、次のシートを置いています。活動日のシートは運営が直接編集することもあり、日付を入れると ID が自動で振られます。</p>
 
- <h3>活動日</h3>
+ <h3>活動日 … 1行＝1回の活動</h3>
  <div class="tbl"><table>
-  <tr><th>列</th><th>項目</th><th>内容</th></tr>
-  <tr><td class="c">A</td><td>イベントID</td><td><code>EV-yyyyMMdd</code>。日付を入力すると <code>onEdit</code> が自動採番（同日2件目は <code>-2</code>）</td></tr>
-  <tr><td class="c">B</td><td>日付</td><td>活動日</td></tr>
-  <tr><td class="c">C／D</td><td>開始／終了</td><td>"18:00" のような文字列。時刻型で保存されても読み出し時に <code>HH:mm</code> に正規化</td></tr>
-  <tr><td class="c">E</td><td>会場</td><td>空欄なら既定の体育館名</td></tr>
-  <tr><td class="c">F</td><td>種別</td><td>通常活動／練習試合／イベント／お休み（入力規則）</td></tr>
-  <tr><td class="c">G</td><td>開催ライン</td><td>この人数で開催、の目安。回ごとに自由設定</td></tr>
-  <tr><td class="c">H</td><td>公開</td><td>チェックボックス。OFF の行は出席票・予定・自動配信のどれにも出ない（下書き・会場未定の週を隠す）</td></tr>
-  <tr><td class="c">I</td><td>名称</td><td>任意。イベント名や対戦相手など。あれば各画面で青の太字</td></tr>
+  <tr><th>項目</th><th>内容</th></tr>
+  <tr><td class="c">イベントID</td><td>「EV-20261129」の形。日付から自動で振る</td></tr>
+  <tr><td class="c">日付／開始／終了</td><td>活動の日と時間帯</td></tr>
+  <tr><td class="c">会場</td><td>空欄ならいつもの体育館</td></tr>
+  <tr><td class="c">種別</td><td>通常活動／練習試合／イベント／お休み の4択</td></tr>
+  <tr><td class="c">開催ライン</td><td>この人数が集まれば開催、の目安。回ごとに変えられる</td></tr>
+  <tr><td class="c">公開</td><td>チェックボックス。OFF の回は出席票にも予定にも自動配信にも出ない（下書きや会場未定の週を隠せる）</td></tr>
+  <tr><td class="c">名称</td><td>任意。イベント名や対戦相手など</td></tr>
  </table></div>
 
- <h3>メンバー</h3>
+ <h3>メンバー … 1行＝1人</h3>
  <div class="tbl"><table>
-  <tr><th>列</th><th>項目</th><th>内容</th></tr>
-  <tr><td class="c">A</td><td>LINEユーザーID</td><td>主キー</td></tr>
-  <tr><td class="c">B</td><td>表示名</td><td>本人が入力した名前</td></tr>
-  <tr><td class="c">C</td><td>レベル</td><td>経験者／ブランク勢／初心者</td></tr>
-  <tr><td class="c">D</td><td>登録日時</td><td>登録・更新のたびに上書き</td></tr>
-  <tr><td class="c">E</td><td>交通手段</td><td>電車(京都方面)／電車(草津方面)／車／自転車／徒歩</td></tr>
-  <tr><td class="c">F</td><td>区分</td><td>高校生／大学生／社会人</td></tr>
-  <tr><td class="c">G</td><td>写真</td><td>運営だけが使う印（空欄＝SNS 掲載OK／NG）。メンバー向けの画面には出さない</td></tr>
+  <tr><th>項目</th><th>内容</th></tr>
+  <tr><td class="c">LINEユーザーID</td><td>この行の主キー</td></tr>
+  <tr><td class="c">表示名／レベル／区分／交通手段</td><td>プロフィール登録画面で入力したもの</td></tr>
+  <tr><td class="c">登録日時</td><td>登録・更新のたびに上書き</td></tr>
+  <tr><td class="c">写真</td><td>運営だけが使う印（SNS に顔を出したくない人）。メンバー向けの画面には出さない</td></tr>
  </table></div>
 
- <h3>出欠</h3>
+ <h3>出欠 … 1行＝「ある活動への、ある人の回答」</h3>
  <div class="tbl"><table>
-  <tr><th>列</th><th>項目</th><th>内容</th></tr>
-  <tr><td class="c">A</td><td>イベントID</td><td rowspan="2">（イベントID, LINEユーザーID）で1行。同じ組み合わせは上書き</td></tr>
-  <tr><td class="c">B</td><td>LINEユーザーID</td></tr>
-  <tr><td class="c">C</td><td>状態</td><td>参加／検討中／不参加／自由練習 の4値。1人1状態（自由練習は「隣のコートに行く」という第4の状態）</td></tr>
-  <tr><td class="c">D</td><td>更新日時</td><td></td></tr>
+  <tr><th>項目</th><th>内容</th></tr>
+  <tr><td class="c">イベントID／LINEユーザーID</td><td>この組み合わせで1行。同じ人が同じ回に答え直したら上書き</td></tr>
+  <tr><td class="c">状態</td><td>参加／検討中／不参加／自由練習 の4値。1人につき1つ</td></tr>
+  <tr><td class="c">更新日時</td><td></td></tr>
  </table></div>
 
- <h3>ゲスト（体験者・同伴）</h3>
+ <h3>ゲスト … 体験者・同伴の人</h3>
  <div class="tbl"><table>
-  <tr><th>列</th><th>項目</th><th>内容</th></tr>
-  <tr><td class="c">A</td><td>ゲストID</td><td><code>G</code>＋UUID 先頭8桁</td></tr>
-  <tr><td class="c">B</td><td>イベントID</td><td>その回だけの登録（毎回来るわけではないので、来る日に追加する）</td></tr>
-  <tr><td class="c">C</td><td>ゲスト名</td><td>20文字まで</td></tr>
-  <tr><td class="c">D</td><td>レベル</td><td>経験者／ブランク勢／初心者</td></tr>
-  <tr><td class="c">E</td><td>紹介者ID</td><td>追加したメンバーの userId。削除権限と「（◯◯さんの紹介）」表示に使う</td></tr>
-  <tr><td class="c">F</td><td>登録日時</td><td></td></tr>
-  <tr><td class="c">G</td><td>種別</td><td>体験／同伴。同伴＝LINE を持たない家族（親子で来るお子さんなど）。空欄は体験扱い</td></tr>
+  <tr><th>項目</th><th>内容</th></tr>
+  <tr><td class="c">ゲストID</td><td>追加のたびに自動で振る</td></tr>
+  <tr><td class="c">イベントID</td><td>その回だけの登録。来る日にその都度追加する</td></tr>
+  <tr><td class="c">ゲスト名／レベル</td><td>追加した人が入力</td></tr>
+  <tr><td class="c">紹介者ID</td><td>追加したメンバーの ID。削除できる人の判定と「（◯◯さんの紹介）」の表示に使う</td></tr>
+  <tr><td class="c">種別</td><td>体験／同伴。同伴は LINE を持たない家族（親子参加のお子さんなど）</td></tr>
  </table></div>
 
  <h3>そのほか</h3>
  <ul>
-  <li><b>友だち</b>（LINEユーザーID／初回日時）：API や Webhook で見かけた userId を記録しておくだけのシート。</li>
-  <li><b>管理者</b>（LINEユーザーID）：運営コンソールの権限判定用。この資料では省略。</li>
-  <li>Channel access token などの秘密情報はシートではなく GAS のスクリプトプロパティに置く。</li>
+  <li><b>友だち</b>：画面や LINE から見かけた userId と初回日時を控えておくだけのシート。</li>
+  <li><b>管理者</b>：運営画面を使える人の userId。この資料では省略。</li>
+  <li>LINE の access token などの秘密情報はシートには置かず、GAS の設定領域（スクリプトプロパティ）に入れています。</li>
  </ul>
 </section>
 
 <!-- ============================================================ -->
 <section id="api">
- <h2>5. 画面とサーバのやり取り（API）</h2>
- <p>画面（GitHub Pages）から GAS へは、<code>&lt;script src="…/exec?action=…&amp;userId=…&amp;callback=jcb_1"&gt;</code> を動的に差し込む JSONP。GAS は <code>jcb_1({ ok:true, data:…, ms:… });</code> という JavaScript を返す。<code>ms</code> はサーバ内部の所要時間で、遅いときの切り分け用。</p>
-
+ <h2>5. 画面とサーバのやり取り</h2>
+ <p>画面は「操作名」と「利用者の userId」をクエリに付けて GAS を呼びます。GAS は JSON を返し、その中に <b>成功したか</b>・<b>データ</b>・<b>サーバ内部で何ミリ秒かかったか</b> が入っています。最後の所要時間は、遅いときにどこが遅いかを切り分けるために常に付けています。</p>
  <div class="tbl"><table>
-  <tr><th>action</th><th>主な引数</th><th>すること</th><th>使う画面</th></tr>
-  <tr><td><code>getInit</code></td><td>userId</td><td>公開中の活動一覧（名簿・人数つき）＋自分のプロフィールを1回でまとめて返す</td><td>出席票の起動</td></tr>
-  <tr><td><code>getBoard</code></td><td>userId</td><td>活動一覧だけ</td><td>出席票の再読込、今後の予定</td></tr>
-  <tr><td><code>setAttendance</code></td><td>userId, eventId, status</td><td>出欠シートに1行 upsert</td><td>出席票</td></tr>
-  <tr><td><code>addGuest</code></td><td>eventId, name, level, kind, userId</td><td>ゲストシートに追加、ゲストIDを返す</td><td>出席票</td></tr>
-  <tr><td><code>removeGuest</code></td><td>guestId, userId</td><td>紹介者が一致するときだけ行を削除</td><td>出席票</td></tr>
-  <tr><td><code>getProfile</code></td><td>userId</td><td>メンバーシートの自分の行</td><td>プロフィール</td></tr>
-  <tr><td><code>saveProfile</code></td><td>userId, displayName, level, category, transport</td><td>メンバーシートに upsert。新規か更新かを返す</td><td>プロフィール</td></tr>
-  <tr><td><code>sendWelcome</code></td><td>userId</td><td>登録後の案内カードを push（直近10分以内に登録した人だけ）</td><td>プロフィール</td></tr>
-  <tr><td><code>ping</code></td><td>なし</td><td>シートを触らない最小応答。往復時間の基準</td><td>計測用</td></tr>
+  <tr><th>操作</th><th>送るもの</th><th>サーバがすること</th><th>使う画面</th></tr>
+  <tr><td>出席票を開く</td><td>userId</td><td>公開中の活動一覧（名簿・人数つき）と、その人のプロフィールを1回でまとめて返す</td><td>出席票</td></tr>
+  <tr><td>活動一覧だけ取る</td><td>userId</td><td>上の活動一覧の部分だけ</td><td>出席票の読み直し、今後の予定</td></tr>
+  <tr><td>出欠を記入する</td><td>userId、イベントID、状態</td><td>出欠シートの該当行を上書き（無ければ追加）</td><td>出席票</td></tr>
+  <tr><td>体験者・同伴を追加する</td><td>イベントID、名前、レベル、種別、userId</td><td>ゲストシートに追加して、ゲストIDを返す</td><td>出席票</td></tr>
+  <tr><td>体験者・同伴を消す</td><td>ゲストID、userId</td><td>紹介者が一致するときだけ行を削除</td><td>出席票</td></tr>
+  <tr><td>プロフィールを読む</td><td>userId</td><td>メンバーシートのその人の行</td><td>プロフィール登録</td></tr>
+  <tr><td>プロフィールを保存する</td><td>userId、表示名、レベル、区分、交通手段</td><td>メンバーシートに上書きか追加。新規だったかどうかも返す</td><td>プロフィール登録</td></tr>
+  <tr><td>登録後の案内を送る</td><td>userId</td><td>「最後のお願い」カードをその人に送る（直近10分以内に登録した人だけ）</td><td>プロフィール登録</td></tr>
  </table></div>
- <p class="note">このほかに運営コンソール用の <code>admin*</code> 系がある（省略）。POST は LINE の Webhook と、運営コンソールからの PDF 保存だけ。</p>
+ <p class="note">このほかに運営画面用の操作があります（省略）。POST を使うのは LINE からの Webhook と、運営画面からの PDF 保存だけです。</p>
 
- <h3>出席票を開いてから「参加」を押すまで</h3>
+ <h3>出席票を開いて「参加」を押すまで</h3>
  <ol class="flow">
-  <li><code>liff.init</code> → 未ログインなら <code>liff.login()</code> → <code>liff.getProfile()</code> で userId と LINE 表示名を取得。</li>
-  <li><code>getInit</code> を1回呼び、活動一覧と自分のプロフィールを受け取って描画。プロフィールが <code>null</code> なら未登録バナーを出す。</li>
-  <li>「◯参加」を押す → 画面上の名簿を即座に書き換え（自分を参加に移し、人数・バーを再計算）→ 裏で <code>setAttendance</code>。</li>
-  <li>GAS は <code>LockService</code> で排他しながら出欠シートの該当行を上書き（無ければ追加）し、キャッシュを捨てる。</li>
-  <li>失敗応答のときだけ警告を出して <code>getBoard</code> で読み直す。</li>
+  <li>LIFF を初期化し、ログインしていなければ LINE のログインへ。ログイン済みなら userId と表示名を受け取る。</li>
+  <li>「出席票を開く」を1回呼び、活動一覧と自分のプロフィールを受け取って描画する。プロフィールが無ければ登録のお願いを出す。</li>
+  <li>「◯参加」を押す。画面はすぐに自分を参加の名簿へ移し、人数とバーを計算し直す。保存はその裏で行う。</li>
+  <li>GAS は同時書き込みを防ぐロックを取り、出欠シートの該当行を上書き（無ければ追加）し、読み取り用のキャッシュを捨てる。</li>
+  <li>失敗の返事が来たときだけ警告を出し、活動一覧を取り直す。</li>
  </ol>
 
- <h3>サーバ側の返すデータ（活動1件ぶん）</h3>
-<pre><code>{
-  eventId: "EV-20261129", date: "11/29(日)", eventName: "",
-  time: "18:00〜20:00", venue: "◯◯中学校体育館", kind: "通常活動", line: 6,
-  join:      [ { displayName:"みき", level:"経験者", category:"社会人", transport:"電車(草津方面)", me:true },
-               { displayName:"ゲスト花子", level:"初心者", isGuest:true, kind:"体験", guestId:"G1a2b3c4d", byUserId:"U…", byName:"みき" } ],
-  undecided: [ … ],  shooting: [ … ],          // 検討中／隣のコートの自由練習
-  joinCount: 2, undecidedCount: 0,
-  myStatus: "参加", myShooting: false         // 自分の状態（不参加もここにだけ入る）
-}</code></pre>
- <p class="note">名簿に不参加の人は含めない。不参加はシートには記録されるが、他人に返すデータには一切載らない。</p>
+ <h3>出席票のカード1枚ぶんとして画面が受け取るもの</h3>
+ <div class="tbl"><table>
+  <tr><th>区分</th><th>中身</th></tr>
+  <tr><td>活動の情報</td><td>イベントID、日付、名称、時間、会場、種別、開催ライン</td></tr>
+  <tr><td>参加の名簿</td><td>1人ごとに 表示名・レベル・区分・交通手段・自分かどうか。体験者・同伴は 名前・レベル・種別・誰が追加したか</td></tr>
+  <tr><td>検討中の名簿／自由練習の名簿</td><td>同じ形</td></tr>
+  <tr><td>人数</td><td>参加人数、検討中の人数</td></tr>
+  <tr><td>自分の回答</td><td>参加／検討中／不参加／自由練習／未回答。<b>不参加が入るのはここだけ</b>で、名簿には含めない</td></tr>
+ </table></div>
 </section>
 
 <!-- ============================================================ -->
 <section id="auto">
- <h2>6. 自動配信のルール</h2>
+ <h2>6. 自動配信の決まり</h2>
  <div class="card">
-  <p>GAS の時間トリガーで <b>毎朝9時台に1回</b> <code>sendThursdayCards</code> が動き、活動日シートの「公開 ON かつ お休み以外」の行を見て判定する。配信は公式アカウントの友だち全員への broadcast。</p>
+  <p>GAS の時間トリガーで<b>毎朝9時台に1回</b>処理が動き、活動日シートの「公開 ON かつ お休み以外」の行を見て、今日送るものがあるか判定します。送り先は公式アカウントの友だち全員（broadcast）です。</p>
   <div class="tbl"><table>
    <tr><th>メッセージ</th><th>いつ送るか</th><th>中身</th></tr>
-   <tr><td><b>次回の活動のお知らせ</b></td><td>「前回の活動の翌日」と「6日前」の<b>遅いほう</b>。それが3日前以降になるとき（間隔が4日以下）は送らず、出欠カードに任せる</td><td>日時・会場・［種別］・名称、「出席したい人は、早めに出欠の記入をお願いします😊」、出席票を開くボタン</td></tr>
-   <tr><td><b>出欠カード</b></td><td>活動の<b>3日前</b>（日曜の活動なら木曜）</td><td>人数と開催ライン、◯参加／△検討中／自由練習の名簿、締切（2日前）の案内、出席票を開くボタン</td></tr>
-   <tr><td><b>中止のお知らせ</b></td><td>運営が手動で送る</td><td>テキスト（3-1 参照）</td></tr>
+   <tr><td><b>次回の活動のお知らせ</b></td><td>「前回の活動の翌日」と「6日前」の<b>遅いほう</b>。それが3日前以降になるとき（活動の間隔が4日以下）は送らず、出欠カードに任せる</td><td>日時・会場・種別・名称、記入のお願い、出席票を開くボタン</td></tr>
+   <tr><td><b>出欠カード</b></td><td>活動の<b>3日前</b>（日曜の活動なら木曜）</td><td>人数と開催ライン、名簿、締切（2日前）の案内、出席票を開くボタン</td></tr>
+   <tr><td><b>中止のお知らせ</b></td><td>運営が手で送る</td><td>テキスト（1-4 参照）</td></tr>
   </table></div>
-  <p class="note">「前回の活動」は公開かつお休み以外の活動日のうち直前のもの。お知らせを前回の活動より前に出さないための決まり。</p>
+  <p class="note">「前回の活動」は、公開かつお休み以外の活動日のうち直前のもの。間隔が短い週に、前回の活動より先にお知らせが出てしまうのを防ぐための決まりです。</p>
  </div>
 </section>
 
 <!-- ============================================================ -->
 <section id="rules">
- <h2>7. 集計と表示のルール</h2>
+ <h2>7. 人数の数え方と見せ方の決まり</h2>
  <div class="tbl"><table>
-  <tr><th>項目</th><th>ルール</th></tr>
-  <tr><td>参加人数（joinCount）</td><td>状態「参加」のメンバー ＋ その回のゲスト（体験・同伴）全員</td></tr>
-  <tr><td>開催ライン</td><td>活動日シートの G 列。<code>残り = 開催ライン − 参加人数</code>。0 以下で「開催ライン到達！」、進捗バーは <code>参加人数 ÷ 開催ライン</code>（上限100%）</td></tr>
+  <tr><th>項目</th><th>決まり</th></tr>
+  <tr><td>参加人数</td><td>状態が「参加」のメンバー ＋ その回のゲスト（体験・同伴）全員</td></tr>
+  <tr><td>開催ライン</td><td>活動日シートの値。残り人数 ＝ 開催ライン − 参加人数。0以下で「開催ライン到達！」。進捗バーは 参加人数 ÷ 開催ライン（上限100%）</td></tr>
   <tr><td>検討中・自由練習</td><td>名簿には出すが、参加人数と開催ラインには数えない（自由練習は「※別集計」と明記）</td></tr>
-  <tr><td>不参加</td><td>記録はするが、本人の「あなたの回答」以外のどこにも出さない</td></tr>
-  <tr><td>自由練習ボタン</td><td>種別が通常活動またはイベントの日だけ表示（隣のコートが使える日）。練習試合の日は出ない</td></tr>
+  <tr><td>不参加</td><td>記録はするが、本人の「あなたの回答」以外には出さない</td></tr>
+  <tr><td>自由練習のボタン</td><td>種別が通常活動かイベントの日だけ出す（隣のコートが使える日）。練習試合の日は出さない</td></tr>
   <tr><td>内訳</td><td>参加名簿のレベル別人数。体験・同伴もレベルに含めたうえで「（うち体験◯・同伴◯）」を添える</td></tr>
-  <tr><td>名簿の並び</td><td>出欠シートの行順（＝最初に回答した順）。ゲストは末尾</td></tr>
-  <tr><td>表示する活動</td><td>公開 ON かつ 今日以降、日付昇順。過去の回は出さない</td></tr>
-  <tr><td>締切</td><td>活動の2日前。カードの文言にだけ使い、過ぎても記入自体はできる</td></tr>
+  <tr><td>名簿の並び</td><td>出欠シートの行順（＝先に答えた順）。ゲストは末尾</td></tr>
+  <tr><td>出す活動</td><td>公開 ON かつ今日以降、日付順。過去の回は出さない</td></tr>
+  <tr><td>締切</td><td>活動の2日前。カードの文言に使うだけで、過ぎても記入はできる</td></tr>
  </table></div>
 </section>
 
 <!-- ============================================================ -->
 <section id="speed">
- <h2>8. 速さと安定のための工夫</h2>
+ <h2>8. 遅さ・不安定さへの対策</h2>
  <div class="card">
-  <p>GAS の Web アプリは「デプロイした人として実行」で公開しているため、<b>誰がアクセスしても同じユーザーの実行として扱われ、同時アクセスが1件ずつ順番に処理される</b>。1回のシート読みが2〜3秒かかると、同時に開いた人数ぶんの待ち時間が積み上がる。そのための対策：</p>
+  <p>GAS の Web アプリは「作った人として実行」で公開しているため、<b>誰がアクセスしても同じ利用者の実行として扱われ、同時アクセスが1件ずつ順番に処理されます</b>。シートを読むのに2〜3秒かかると、同時に開いた人数ぶん待ち時間が積み上がります。そこで次のようにしています。</p>
   <ul>
-   <li><b>読み取りデータをキャッシュ</b>：活動・メンバー・出欠・ゲストを整形済み JSON にして <code>CacheService</code> に7分置く（<code>getBoardSource_</code>）。シートの生の値は載せない（時刻セルが JSON で壊れるため）。容量上限 100KB に収めるため、今日以降の公開分だけ。</li>
-   <li><b>5分ごとのトリガーでキャッシュを作り直す</b>（<code>refreshBoardCache</code>）。メンバーが開いたときはほぼ必ずキャッシュがある状態にする。内部処理は 2〜3秒 → 0.03〜0.1秒。</li>
-   <li><b>書き込んだら捨てる</b>：出欠・ゲスト・プロフィールの保存、活動日の編集のあとに <code>clearBoardCache_()</code>。アプリ経由の変更は即反映され、古く見えるのはシートを直接手で書き換えたときだけ（最大5分）。</li>
-   <li><b>起動の通信を1本に</b>：出席票は <code>getInit</code> で活動一覧とプロフィールをまとめて取る。前回の userId を端末に覚えておき、2回目以降は <code>liff.init</code> を待たずに問い合わせを始めて並行させる（取得した userId が違えば取り直す）。</li>
-   <li><b>長く待って、中断のときだけやり直す</b>：タイムアウト25秒、10秒経ったら「通信が混み合っています」に文言を変える。やり直すのは <code>&lt;script&gt;</code> の読み込みが中断された（<code>onerror</code>）ときだけ1回。<code>addGuest</code> は二重登録になるのでやり直さない。</li>
-   <li><b>楽観的更新</b>：出欠ボタン、体験者・同伴の追加／削除は押した瞬間に画面を進め、通信は裏で待つ。</li>
-   <li><b>書き込みは <code>LockService</code> で排他</b>。送信中は該当の活動のボタンを無効化して連打を防ぐ。</li>
-   <li><b>すべての応答に <code>ms</code>（サーバ内部時間）</b>を載せる。内部が小さいのに往復が長ければ Google 側の受付待ち、内部も長ければ自分たちのシート読みが原因、と切り分けられる。</li>
+   <li><b>読み取り用のデータをキャッシュする。</b>活動・メンバー・出欠・ゲストを整形済みの JSON にして GAS のキャッシュに7分置く。載せるのは今日以降の公開分だけ（容量上限が1件100KB のため）。</li>
+   <li><b>5分ごとにキャッシュを作り直す。</b>メンバーが開いたときには、ほぼ必ずキャッシュがある状態にしておく。シートを読む処理が 2〜3秒 → 0.1秒以下になった。</li>
+   <li><b>書き込んだらキャッシュを捨てる。</b>出欠・ゲスト・プロフィールの保存、活動日の編集のあとはすぐ捨てる。アプリ経由の変更は即反映され、古く見えるのは運営がシートを直接手で書き換えたときだけ（最大5分）。</li>
+   <li><b>開くときの通信は1本。</b>活動一覧とプロフィールをまとめて取る。2回目以降は前回の userId を端末に覚えておき、LINE の初期化を待たずに問い合わせを始めて並行させる（受け取った ID が違えば取り直す）。</li>
+   <li><b>長めに待ち、やり直すのは中断のときだけ。</b>タイムアウト25秒。10秒たったら「通信が混み合っています」と文言を変える。やり直すのは通信そのものが中断されたときだけ1回で、時間切れではやり直さない。体験者の追加は二重登録になるのでやり直さない。</li>
+   <li><b>押した瞬間に画面を進める。</b>出欠ボタン、体験者・同伴の追加と削除は先に画面を書き換え、通信は裏で待つ。</li>
+   <li><b>書き込みは排他する。</b>同時書き込みはロックで直列にし、送信中はその活動のボタンを無効にして連打を防ぐ。</li>
+   <li><b>応答にサーバ内部の所要時間を載せる。</b>内部が短いのに往復が長ければ Google 側の待ち、内部も長ければ自分たちのシート読みが原因、と切り分けられる。</li>
   </ul>
  </div>
 </section>
 
 <!-- ============================================================ -->
-<section id="tradeoff">
- <h2>9. 設計上の割り切り</h2>
+<section id="policy">
+ <h2>9. あえてそうしていること</h2>
  <div class="card">
   <ul>
-   <li><b>認証は LIFF の userId を信用するだけ。</b>画面が <code>liff.getProfile()</code> で得た userId をクエリに付け、サーバはそれを本人として扱う（ID トークンの検証はしていない）。サークル内の出欠票という用途に合わせた割り切り。</li>
-   <li><b>通信は JSONP（GET）。</b>失敗の検知は <code>onerror</code> とタイムアウトのみで、HTTP のステータスは見えない。</li>
-   <li><b>速度の限界は GAS 側。</b>Google の受付部分だけで往復1.2〜1.7秒かかり、時間帯によってはさらに詰まる。アプリ側の高速化は上記で打ち止めで、これ以上は基盤を変えるしかない。それでもスプレッドシート＋GAS を選んでいるのは、運営者が交代してもシートを見て直せること、個人情報を第三者のサーバに置かないこと、費用0円を優先しているため。</li>
-   <li><b>公開リポジトリに個人情報を置かない。</b>名簿はシートだけにあり、HTML が受け取るのは API の応答のみ。運営用の書類の保存先なども HTML には書かず GAS 側から渡す。</li>
-   <li><b>出欠カードのボタンは「出席票を開く」1つだけ。</b>カードは画面より縦に長く、カード上で回答すると結果の返信がカードの下に隠れて見えない。LIFF なら全画面で結果が分かり、自由練習・体験者の追加も同じ画面でできる。</li>
+   <li><b>メンバーの手軽さを最優先にしている。</b>インストール不要、記入はボタン1つ、プロフィールは1回だけ。少しでも手間があると続かない、という経験から。</li>
+   <li><b>不参加は見せない。</b>来ない人が責められている感じにならないように。</li>
+   <li><b>年齢は聞かない。表示名は本名でなくてよい。</b></li>
+   <li><b>本人確認は LINE の userId を信用するだけ。</b>画面が LIFF から受け取った ID をそのまま送り、サーバはそれを本人として扱う（ID トークンの検証はしていない）。サークル内の出欠票という用途に合わせたやり方。</li>
+   <li><b>通信は JSONP（GET）。</b>失敗の検知は読み込みエラーとタイムアウトだけで、HTTP のステータスは見えない。</li>
+   <li><b>速さの限界は GAS 側にある。</b>Google の受付だけで往復1.2〜1.7秒かかり、時間帯によってはさらに詰まる。アプリ側でできる高速化は 8 で打ち止め。それでもスプレッドシート＋GAS にしているのは、運営者が代わってもシートを見れば直せること、名簿を第三者のサーバに置かないこと、費用0円を優先しているから。</li>
+   <li><b>公開リポジトリに個人情報を置かない。</b>名簿はシートにしか無く、画面は API の応答で受け取るだけ。運営用の書類の保存先なども HTML には書かず GAS から渡す。</li>
+   <li><b>出欠カードのボタンは「出席票を開く」1つだけ。</b>カードは画面より縦に長く、カード上で回答すると結果の返信がカードの下に隠れて見えない。出席票なら全画面で結果が分かり、自由練習や体験者の追加も同じ画面でできる。</li>
   </ul>
  </div>
 </section>
 
 <!-- ============================================================ -->
 <section id="files">
- <h2>10. ファイル構成と反映の手順</h2>
+ <h2>10. ファイルと公開のしかた</h2>
  <div class="tbl"><table>
-  <tr><th>置き場所</th><th>ファイル</th><th>役割</th></tr>
-  <tr><td rowspan="4">GitHub Pages<br><span class="note">（静的）</span></td><td><code>attendance.html</code></td><td>出席票。LIFF ID、API の URL、描画、楽観的更新、ゲストのモーダル</td></tr>
-  <tr><td><code>schedule.html</code></td><td>今後の予定（読み取り専用）</td></tr>
-  <tr><td><code>profile.html</code></td><td>プロフィール登録。本人発言の送信、登録後の案内の依頼</td></tr>
-  <tr><td><code>admin.html</code>／<code>menu-maker.html</code></td><td>運営コンソール／リッチメニュー画像の生成（この資料では省略）</td></tr>
-  <tr><td rowspan="7">Google Apps Script</td><td><code>LineBot.js</code></td><td><code>doGet</code>（action の振り分け）・<code>doPost</code>（Webhook）・LINE API 呼び出し・友だち追加時の案内</td></tr>
-  <tr><td><code>AttendanceApp.js</code></td><td>活動一覧の組み立て、出欠の upsert、キャッシュ、イベント ID の自動採番</td></tr>
-  <tr><td><code>ProfileApp.js</code></td><td>プロフィールの取得・保存、登録後の案内</td></tr>
-  <tr><td><code>GuestApp.js</code></td><td>体験者・同伴の追加・削除</td></tr>
-  <tr><td><code>NotifyApp.js</code></td><td>Flex メッセージの組み立て、自動配信の判定、中止のお知らせ</td></tr>
-  <tr><td><code>AdminApp.js</code>／<code>DocsApp.js</code></td><td>運営コンソール用 API、書類 PDF の保存（省略）</td></tr>
-  <tr><td><code>コード.js</code></td><td>シートの初期化（見出し・入力規則・チェックボックス）</td></tr>
+  <tr><th>置き場所</th><th>ファイル</th><th>中身</th></tr>
+  <tr><td rowspan="2">GitHub Pages</td><td><code>attendance.html</code>／<code>schedule.html</code>／<code>profile.html</code></td><td>出席票／今後の予定／プロフィール登録。それぞれ HTML・CSS・JavaScript が1ファイルに入っている</td></tr>
+  <tr><td><code>admin.html</code>／<code>menu-maker.html</code></td><td>運営画面／リッチメニュー画像の生成（省略）</td></tr>
+  <tr><td rowspan="3">Google Apps Script</td><td>LINE 連携</td><td>GET／POST の受け口、LINE API の呼び出し、友だち追加時の案内</td></tr>
+  <tr><td>出欠・プロフィール・ゲスト</td><td>シートの読み書き、活動一覧の組み立て、キャッシュ</td></tr>
+  <tr><td>配信</td><td>Flex Message の組み立て、自動配信の判定、中止のお知らせ</td></tr>
  </table></div>
  <h3>反映のしかた</h3>
  <ul>
-  <li><b>画面</b>：リポジトリに push すれば GitHub Pages に反映。LINE 内ブラウザは HTML を強くキャッシュするので、LIFF のエンドポイント URL 末尾の <code>?v=N</code> を上げて読み直させる。</li>
-  <li><b>サーバ</b>：<code>clasp push</code> でコードを上げ、<code>clasp deploy</code> で Web アプリの新バージョンを作る（デプロイしないと <code>/exec</code> に反映されない）。</li>
-  <li><b>順序</b>：サーバ側に新しい action を足すときは、GAS のデプロイ → 画面の push の順。逆にすると全員の画面が通信エラーになる。</li>
-  <li><b>動作確認</b>：配信系は「自分だけに送る」テスト関数（<code>testSendCardToSelf</code> など）を GAS エディタから実行する。本番の配信ボタンとトリガーは全員に届く。</li>
+  <li><b>画面</b>：Git で push すれば GitHub Pages に反映される。LINE の中のブラウザは HTML を強くキャッシュするので、LIFF に登録した URL の末尾の <code>?v=N</code> を1つ上げて読み直させる。</li>
+  <li><b>サーバ</b>：clasp でコードを上げたあと、Web アプリの新しい版をデプロイする（デプロイしないと公開 URL に反映されない）。</li>
+  <li><b>順番</b>：サーバに新しい操作を足すときは、GAS のデプロイ → 画面の push の順。逆にすると全員の画面が通信エラーになる。</li>
+  <li><b>動作確認</b>：配信は「自分だけに送る」テスト用の処理を GAS のエディタから実行して見た目を確かめる。本番の配信は全員に届くので試しには使わない。</li>
  </ul>
 </section>
 
-<footer>サークル出欠アプリのしくみ　／　画面内の名前・サークル名は架空のものです</footer>
+<footer>サークル出欠アプリの紹介　／　画面内の名前・サークル名・会場名は架空のものです</footer>
 </div>
 </body>
 </html>
